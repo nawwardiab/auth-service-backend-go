@@ -30,6 +30,6 @@ reload: clean run
 
 docker-build:
 	@echo "–> building Docker image auth-service:latest"
-	docker build -t user-service:latest .
+	docker build -t auth-service:latest .
 
 start: clean compile docker-build

@@ -1,6 +1,6 @@
-# spaceSHIFT API
+# Auth and Addresses API
 
-This collection covers all authentication and address endpoints for the SpaceShift backend.
+This collection covers all authentication and address endpoints for the auth-service backend.
 Base URL: `http://localhost:8080`
 
 ---

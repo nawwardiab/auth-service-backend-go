@@ -1,7 +1,7 @@
 {
   "info": {
     "_postman_id": "1e66b6ac-49a2-45b2-b95b-0691de84219c",
-    "name": "spaceSHIFT API",
+    "name": "auth and address API",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "46941130",
     "_collection_link": "https://nawar-8028682.postman.co/workspace/e1d853d4-b588-4c6c-83af-51341c24e088/collection/46941130-1e66b6ac-49a2-45b2-b95b-0691de84219c?action=share&source=collection_link&creator=46941130"
@@ -275,7 +275,7 @@
           ]
         }
       ],
-      "description": "This collection covers all authentication endpoints for the SpaceShift backend.  \nBase URL: `http://localhost:8080/api`"
+      "description": "This collection covers all authentication endpoints for the auth and address backend.  \nBase URL: `http://localhost:8080/api`"
     },
     {
       "name": "Address",

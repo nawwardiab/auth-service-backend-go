@@ -1,0 +1,376 @@
+{
+  "info": {
+    "_postman_id": "1e66b6ac-49a2-45b2-b95b-0691de84219c",
+    "name": "spaceSHIFT API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "46941130",
+    "_collection_link": "https://nawar-8028682.postman.co/workspace/e1d853d4-b588-4c6c-83af-51341c24e088/collection/46941130-1e66b6ac-49a2-45b2-b95b-0691de84219c?action=share&source=collection_link&creator=46941130"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"Ana\",\n  \"email\": \"Ana@example.com\",\n  \"password\": \"supersecret\",\n  \"repeatedPassword\": \"supersecret\"\n}\n",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8080/api/register",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "register"]
+            },
+            "description": "### Register\n\nCreates a new user.\n\n- **username**: 3–30 chars\n    \n- **email**: valid email\n    \n- **password**: min 8 chars\n    \n- **repeatedPassword**: must match password"
+          },
+          "response": [
+            {
+              "name": "Register",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"username\": \"ahmad\",\n  \"email\": \"ahmad@example.com\",\n  \"password\": \"supersecret\",\n  \"repeatedPassword\": \"supersecret\"\n}\n",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "http://localhost:8080/api/register",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "8080",
+                  "path": ["api", "register"]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Vary",
+                  "value": "Origin"
+                },
+                {
+                  "key": "Date",
+                  "value": "Wed, 23 Jul 2025 11:16:13 GMT"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "65"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"user\": {\n        \"id\": \"0675407b-1347-41fc-aaae-4c50523b7f31\",\n        \"username\": \"Ana\"\n    }\n}"
+            },
+            {
+              "name": "Register",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"username\": \"Ana\",\n  \"email\": \"Ana@example.com\",\n  \"password\": \"supersecret\",\n  \"repeatedPassword\": \"supersecret\"\n}\n",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "http://localhost:8080/api/register",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "8080",
+                  "path": ["api", "register"]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Vary",
+                  "value": "Origin"
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 31 Jul 2025 12:49:04 GMT"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "72"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"user\": {\n        \"id\": \"8300ffff-f2c0-4e1b-b5fd-1700abd17c5c\",\n        \"username\": \"Ana\"\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"ana@example.com\",\n    \"password\": \"supersecret\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8080/api/login",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "login"]
+            },
+            "description": "### Login\n\nValidates user credentials and issues an HttpOnly JWT cookie."
+          },
+          "response": [
+            {
+              "name": "Login",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"email\": \"ana@example.com\",\n    \"password\": \"supersecret\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "http://localhost:8080/api/login",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "8080",
+                  "path": ["api", "login"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Set-Cookie",
+                  "value": "access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFuYUBleGFtcGxlLmNvbSIsImV4cCI6MTc1NDA1MjU3OCwidXNlcl9pZCI6MH0.Un3Qvoh3hOVQtZptoSfllXWIA3RE98Ir_gzpwGor2t8; Path=/; Expires=Fri, 01 Aug 2025 12:49:38 GMT; HttpOnly; Secure; SameSite=Lax"
+                },
+                {
+                  "key": "Vary",
+                  "value": "Origin"
+                },
+                {
+                  "key": "Date",
+                  "value": "Thu, 31 Jul 2025 12:49:38 GMT"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "72"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"user\": {\n        \"id\": \"8300ffff-f2c0-4e1b-b5fd-1700abd17c5c\",\n        \"username\": \"Ana\"\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-CSRF-Token",
+                "value": "pXWgYHpoJcSkVcSevqqAoKkRukWrYbjb",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/api/v1/logout",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "v1", "logout"]
+            },
+            "description": "### Logout\n\nClears the JWT cookie, logging out the user."
+          },
+          "response": [
+            {
+              "name": "Logout",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "X-CSRF-Token",
+                    "value": "pXWgYHpoJcSkVcSevqqAoKkRukWrYbjb",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "http://localhost:8080/api/logout",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "8080",
+                  "path": ["api", "logout"]
+                }
+              },
+              "status": "No Content",
+              "code": 204,
+              "_postman_previewlanguage": "plain",
+              "header": [
+                {
+                  "key": "Set-Cookie",
+                  "value": "csrf_token=pXWgYHpoJcSkVcSevqqAoKkRukWrYbjb; Expires=Thu, 24 Jul 2025 11:17:38 GMT; SameSite=Strict"
+                },
+                {
+                  "key": "Set-Cookie",
+                  "value": "access_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; Secure; SameSite=Lax"
+                },
+                {
+                  "key": "Vary",
+                  "value": "Origin"
+                },
+                {
+                  "key": "Vary",
+                  "value": "Cookie"
+                },
+                {
+                  "key": "Date",
+                  "value": "Wed, 23 Jul 2025 11:17:38 GMT"
+                }
+              ],
+              "cookie": [],
+              "body": null
+            }
+          ]
+        }
+      ],
+      "description": "This collection covers all authentication endpoints for the SpaceShift backend.  \nBase URL: `http://localhost:8080/api`"
+    },
+    {
+      "name": "Address",
+      "item": [
+        {
+          "name": "Create Address",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-CSRF-Token",
+                "value": "JtOfePwnHpOUMHOrVngnLeCrPmigwYqR",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"addr_1\": \"Burgemeister str. 50\",\n  \"addr_2\": \"\",\n  \"zip\": \"10115\",\n  \"city\": \"Berlin\",\n  \"country\": \"Germany\",\n  \"isdefault\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8080/api/v1/users/address/add",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "v1", "users", "address", "add"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Address",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/v1/users/address/1",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "v1", "users", "address", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Address",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/v1/users/address/1",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "v1", "users", "address", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Address",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "X-CSRF-Token",
+                "value": "JtOfePwnHpOUMHOrVngnLeCrPmigwYqR",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"addr_1\": \"Bouchestr 52\",\n  \"addr_2\": \"\",\n  \"zip\": \"10115\",\n  \"city\": \"Berlin\",\n  \"country\": \"Germany\",\n  \"isdefault\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8080/api/v1/users/address/1",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "v1", "users", "address", "1"]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

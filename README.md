@@ -6,6 +6,11 @@ A Go-based RESTful API that provides user authentication and address management.
 
 ---
 
+## Related Repositories
+- **Frontend Client**: [auth-frontend-react-ts](https://github.com/your-username/auth-frontend-react-ts)
+
+---
+
 ## Features
 
 * **Auth**: Register, login (JWT cookies), logout.

@@ -1,6 +1,4 @@
-# README.md
-
-## Auth-Service Backend API
+# Auth-Service Backend API
 
 A Go-based RESTful API that provides user authentication and address management. Built with **Echo**, structured into clean layers (handler, service, repo, model, validator), and containerized with Docker. Includes database migrations and Postman collection for testing.
 

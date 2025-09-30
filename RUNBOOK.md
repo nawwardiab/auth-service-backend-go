@@ -1,5 +1,3 @@
-# RUNBOOK.md
-
 ## Purpose
 
 This runbook describes operational procedures for running, maintaining, and troubleshooting the **auth and address API** service.

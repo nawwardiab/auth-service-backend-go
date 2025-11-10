@@ -10,10 +10,8 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-
 var ErrInvalidCredentials = errors.New("service: invalid credentials")
 var ErrUserExist = errors.New("service: can't register this user")
-
 
 type AuthService struct {
 	authRepo *repo.AuthRepo
@@ -23,25 +21,29 @@ func NewAuthService(authRepo *repo.AuthRepo) *AuthService {
 	return &AuthService{authRepo: authRepo}
 }
 
+// Register checks if user exists by passing email to authRepo:
+// - If user doesn't it hashes password and passes data to repo layer (to query db)
+// - If user exists it returns an error to the http-request handler.
 func (s *AuthService) Register(username, email, pwd string) (*model.User, error) {
 	// Check if user exists
-	_, exists  := s.authRepo.GetByEmail(email)
+	_, exists := s.authRepo.GetUserByEmail(email)
 	if exists == nil {
 		return nil, ErrUserExist
 	}
-	
-	// hash password
+
+	// hash password:
+	// if no error, proceed with logic for creating a new user
 	hashedPwd, hashErr := hashPassword(pwd)
 	if hashErr != nil {
 		return nil, fmt.Errorf("service: hash password: %w", hashErr)
 	} else {
 		usr := &model.User{
-			Username: username,
-			Email: email,
+			Username:     username,
+			Email:        email,
 			PasswordHash: hashedPwd,
 		}
 		createUserErr := s.authRepo.CreateUser(usr)
-		if createUserErr != nil{
+		if createUserErr != nil {
 			return nil, createUserErr
 		} else {
 			return usr, nil
@@ -49,10 +51,14 @@ func (s *AuthService) Register(username, email, pwd string) (*model.User, error)
 	}
 }
 
-// Login
-func (s *AuthService) Login(email, password string) (*model.User, error){
+// Login checks if user exists by passing email to authRepo:
+// - It queries db and scans it for matching email. if no match found it returns an error (invalid credentials)
+// - If user exists it compares hashed password with input password
+// - if they don't match it returns an invalid credential error to the http-request handler.
+// - if they match it returns the values of the user to the http-request handler.
+func (s *AuthService) Login(email, password string) (*model.User, error) {
 	// Check if user exists
-	usr, fetchingErr := s.authRepo.GetByEmail(email)
+	usr, fetchingErr := s.authRepo.GetUserByEmail(email)
 	if fetchingErr != nil {
 		if errors.Is(fetchingErr, pgx.ErrNoRows) {
 			return nil, ErrInvalidCredentials

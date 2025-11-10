@@ -7,13 +7,12 @@ import (
 	"github.com/jackc/pgx"
 )
 
-
 type AuthRepo struct {
 	db *pgx.Conn
 }
 
 func NewAuthRepo(db *pgx.Conn) *AuthRepo {
-	return  &AuthRepo{db: db}
+	return &AuthRepo{db: db}
 }
 
 // CreateUser queries db to create a new user
@@ -23,21 +22,21 @@ func (r *AuthRepo) CreateUser(u *model.User) error {
 	`
 	row := r.db.QueryRow(query, u.Username, u.Email, u.PasswordHash)
 	scanErr := row.Scan(&u.ID, &u.CreatedAt, &u.UpdatedAt)
-	if  scanErr != nil {
-	  return fmt.Errorf("create user scan returning: %w", scanErr)
+	if scanErr != nil {
+		return fmt.Errorf("create user scan returning: %w", scanErr)
 	} else {
 		return nil
 	}
 }
 
-// GetByEmail uses db connection to query users table by username
-func (r *AuthRepo) GetByEmail(email string) (*model.User, error){
+// GetUserByEmail uses db connection to query users table by email
+func (r *AuthRepo) GetUserByEmail(email string) (*model.User, error) {
 	u := new(model.User)
 	query := `SELECT id, username, email, password_hash FROM users WHERE email=$1`
 	row := r.db.QueryRow(query, email)
-	
+
 	scanErr := row.Scan(&u.ID, &u.Username, &u.Email, &u.PasswordHash)
-	
+
 	if scanErr != nil {
 		return nil, scanErr
 	} else {

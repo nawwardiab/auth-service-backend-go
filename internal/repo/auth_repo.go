@@ -43,3 +43,18 @@ func (r *AuthRepo) GetUserByEmail(email string) (*model.User, error) {
 		return u, nil
 	}
 }
+
+// GetUserByID uses db connection to query users table by id
+func (r *AuthRepo) GetUserByID(id int) (*model.User, error) {
+	u := new(model.User)
+	query := `SELECT id, username, email FROM users WHERE id=$1`
+	row := r.db.QueryRow(query, id)
+
+	scanErr := row.Scan(&u.ID, &u.Username, &u.Email)
+
+	if scanErr != nil {
+		return nil, scanErr
+	} else {
+		return u, nil
+	}
+}

@@ -78,6 +78,27 @@ func (h *AddressHandler) CreateAddress(c echo.Context) error {
 	return c.JSON(http.StatusCreated, addr)
 }
 
+// GetAddresses handles GET /api/v1/users/addresses
+// Returns all addresses for the authenticated user
+func (h *AddressHandler) GetAddresses(c echo.Context) error {
+	// Extract user ID from JWT
+	claims := c.Get("user").(*jwt.Token).Claims.(jwt.MapClaims)
+	userID := int(claims["user_id"].(float64))
+
+	// Get all addresses for user
+	addresses, err := h.addrSvc.GetAddresses(userID)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Error()})
+	}
+
+	// Return empty array if no addresses (not an error)
+	if addresses == nil {
+		addresses = []model.Address{}
+	}
+
+	return c.JSON(http.StatusOK, addresses)
+}
+
 // GetAddress handles GET api/v1/users/addr/:id
 func (h *AddressHandler) GetAddress(c echo.Context) error {
 	// parse and validate address id from url params

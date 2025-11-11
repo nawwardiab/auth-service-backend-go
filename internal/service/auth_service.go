@@ -91,3 +91,15 @@ func hashPassword(password string) (string, error) {
 func checkPassword(hashed, password string) error {
 	return bcrypt.CompareHashAndPassword([]byte(hashed), []byte(password))
 }
+
+// GetUser retrieves a user by ID
+func (s *AuthService) GetUser(id int) (*model.User, error) {
+	usr, err := s.authRepo.GetUserByID(id)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, fmt.Errorf("service: user not found")
+		}
+		return nil, fmt.Errorf("service: user lookup: %w", err)
+	}
+	return usr, nil
+}

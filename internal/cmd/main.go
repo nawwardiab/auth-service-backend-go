@@ -45,7 +45,9 @@ func main() {
 	// instantiate echo
 	e := echo.New()
 
-	e.Use(middleware.Logger())
+	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
+		Format: "time=${time_rfc3339}, method=${method}, uri=${uri}, status=${status}, error=${error}\n",
+	}))
 
 	// Wire up echo validator
 	e.Validator = validator.New()
@@ -77,7 +79,7 @@ func main() {
 		CookieName:     "csrf_token",
 		CookieSameSite: http.SameSiteStrictMode,
 		CookieHTTPOnly: false,
-		CookieSecure:   true,
+		CookieSecure:   false, // false for local HTTP development
 		TokenLookup:    "header:X-CSRF-Token",
 		// skip CSRF on logout
 		Skipper: func(c echo.Context) bool {
@@ -85,9 +87,34 @@ func main() {
 		},
 	}))
 
+	// Middleware to ensure CSRF token cookie is accessible at root path
+	// This allows JavaScript to read it via document.cookie
+	apiV1.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			// Get CSRF token from cookie (set by CSRF middleware)
+			cookie, err := c.Cookie("csrf_token")
+			if err == nil && cookie != nil && cookie.Value != "" {
+				// Set the same cookie at root path so it's accessible via document.cookie
+				rootCookie := &http.Cookie{
+					Name:     "csrf_token",
+					Value:    cookie.Value,
+					Path:     "/",
+					MaxAge:   86400, // 24 hours
+					HttpOnly: false,
+					Secure:   false,
+					SameSite: http.SameSiteStrictMode,
+				}
+				c.SetCookie(rootCookie)
+			}
+			return next(c)
+		}
+	})
+
 	// Wire portected routes
 	apiV1.POST("/logout", auth.LogoutHandler)
+	apiV1.GET("/profile", auth.ProfileHandler)
 
+	apiV1.GET("/users/addresses", addr.GetAddresses)
 	apiV1.POST("/users/address/add", addr.CreateAddress)
 	apiV1.GET("/users/address/:id", addr.GetAddress)
 	apiV1.PATCH("/users/address/:id", addr.UpdateAddress)

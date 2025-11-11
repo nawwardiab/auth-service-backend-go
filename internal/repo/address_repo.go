@@ -32,6 +32,41 @@ func (r *AddressRepo) CreateAddress(a *model.Address) error{
 	}
 }
 
+// GetAddresses retrieves all addresses for a user
+func (r *AddressRepo) GetAddresses(userID int) ([]model.Address, error) {
+	query := `
+		SELECT id, u_id, addr_1, addr_2, zip, city, country, is_default, created_at, updated_at
+		FROM addresses
+		WHERE u_id = $1;`
+	rows, queryErr := r.db.Query(query, userID)
+	if queryErr != nil {
+		return nil, fmt.Errorf("GetAddresses: %w", queryErr)
+	}
+	defer rows.Close()
+	var addresses []model.Address
+	for rows.Next() {
+		var addr model.Address
+		err := rows.Scan(
+			&addr.ID,
+			&addr.UId,
+			&addr.Addr_1,
+			&addr.Addr_2,
+			&addr.Zip,
+			&addr.City,
+			&addr.Country,
+			&addr.IsDefault,
+			&addr.CreatedAt,
+			&addr.UpdatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+		addresses = append(addresses, addr)
+	}
+
+	return addresses, nil
+}
+
 // ClearDefaultForUser sets defaut=false on all addresses for the given user.
 func (r *AddressRepo) ClearDefaultForUser(userID int) error {
 	query := `

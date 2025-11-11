@@ -25,8 +25,8 @@ func NewAuthHandler(authSvc *service.AuthService, jwtSecret []byte) *AuthHandler
 	}
 }
 
-// user for sanitation
-type user struct {
+// registerUser for sanitation
+type registerUser struct {
 	Username         string `json:"username" validate:"required,min=3,max=30"`
 	Email            string `json:"email" validate:"required,email"`
 	Password         string `json:"password" validate:"required,min=8"`
@@ -34,14 +34,16 @@ type user struct {
 }
 
 // Normalize implements Normalizable (from custom validator)
-func (u *user) Normalize() {
+func (u *registerUser) Normalize() {
 	u.Username = strings.TrimSpace(u.Username)
 	u.Email = strings.ToLower(strings.TrimSpace(u.Email))
+	u.Password = strings.TrimSpace(u.Password)
+	u.RepeatedPassword = strings.TrimSpace(u.RepeatedPassword)
 }
 
 // RegisterHandler
 func (h *AuthHandler) RegisterHandler(c echo.Context) error {
-	req := new(user)
+	req := new(registerUser)
 	bindErr := c.Bind(req)
 	if bindErr != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request payload")
@@ -56,19 +58,34 @@ func (h *AuthHandler) RegisterHandler(c echo.Context) error {
 	// wire Auth service
 	user, registerErr := h.authSvc.Register(req.Username, req.Email, req.Password)
 	if registerErr != nil {
+		if errors.Is(registerErr, service.ErrUserExist) {
+			return echo.NewHTTPError(http.StatusConflict, "user already exists")
+		}
 		return echo.NewHTTPError(http.StatusInternalServerError, "server error")
-	} else {
-		return c.JSON(http.StatusCreated, echo.Map{
-			"user": echo.Map{
-				"username": user.Username,
-			},
-		})
 	}
+
+	return c.JSON(http.StatusCreated, echo.Map{
+		"user": echo.Map{
+			"id":       user.ID,
+			"username": user.Username,
+		},
+	})
+}
+
+type loginUser struct {
+	Email    string `json:"email" validate:"required,email"`
+	Password string `json:"password" validate:"required"`
+}
+
+// Normalize implements Normalizable (from custom validator)
+func (u *loginUser) Normalize() {
+	u.Email = strings.ToLower(strings.TrimSpace(u.Email))
+	u.Password = strings.TrimSpace(u.Password)
 }
 
 // LoginHandler
 func (h *AuthHandler) LoginHandler(c echo.Context) error {
-	req := new(user)
+	req := new(loginUser)
 	bindErr := c.Bind(req)
 	if bindErr != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request payload")
@@ -151,8 +168,30 @@ func (h *AuthHandler) setTokenCookie(c echo.Context, token string) {
 		Path:     "/",
 		Expires:  time.Now().Add(24 * time.Hour),
 		HttpOnly: true,
-		Secure:   true,
+		Secure:   false, // false for local HTTP development
 		SameSite: http.SameSiteLaxMode,
 	}
 	c.SetCookie(cookie)
+}
+
+// ProfileHandler returns the current user's profile
+func (h *AuthHandler) ProfileHandler(c echo.Context) error {
+	// Extract the user ID from the JWT token
+	claims := c.Get("user").(*jwt.Token).Claims.(jwt.MapClaims)
+	userID := int(claims["user_id"].(float64))
+
+	// Get user from service
+	user, err := h.authSvc.GetUser(userID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, "user not found")
+	}
+
+	// Return user info (without password hash)
+	return c.JSON(http.StatusOK, echo.Map{
+		"user": echo.Map{
+			"id":       user.ID,
+			"username": user.Username,
+			"email":    user.Email,
+		},
+	})
 }

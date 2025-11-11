@@ -18,13 +18,13 @@ func NewDB(cfg *config.Config) (*pgx.Conn, error) {
 	// Parses the URI and returns ConnConfig type or an error
 	dbConfig, parsingErr := pgx.ParseURI(connStr)
 	if parsingErr != nil {
-		return nil, fmt.Errorf("invalid connection string: %w", parsingErr)
+		return nil, fmt.Errorf("invalid connection string: %w ", parsingErr)
 	}
 
 	// Establishes a psql-db connection or returns an error
 	conn, connErr := pgx.Connect(dbConfig)
 	if connErr != nil {
-		return nil, fmt.Errorf("%w: %v", ErrDBConnection, connErr)
+		return nil, fmt.Errorf("%w: %v ", ErrDBConnection, connErr)
 	} else {
 		return conn, nil
 	}

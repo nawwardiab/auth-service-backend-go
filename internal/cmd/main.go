@@ -1,5 +1,9 @@
 package main
 
+/* TODO (SC = Success Criteria)
+* Go over the app and understand each line and each decision (SC: Notes for each file)
+ */
+
 import (
 	"log"
 	"net/http"

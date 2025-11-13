@@ -10,7 +10,8 @@ run: compile
 	set -a; . ./.env; set +a; ./server
 
 # Datbase 
-MIGRATE_TOOL := /home/dci-student/go/bin/migrate
+# Add own binary path for migrate 
+MIGRATE_TOOL := /home/nawar/go/bin/migrate
 MIGRATE_DIR := migrations
 
 

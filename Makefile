@@ -7,7 +7,7 @@ compile: ./internal/cmd/main.go
 # Run sources .env file and runs the compiled executable 
 run: compile
 	@echo "–> running the app"
-	set -a; . ./.env; set +a; env; ./server
+	set -a; . ./.env; set +a; ./server
 
 # Datbase 
 MIGRATE_TOOL := /home/dci-student/go/bin/migrate

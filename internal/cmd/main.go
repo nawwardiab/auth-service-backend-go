@@ -1,9 +1,5 @@
 package main
 
-/* TODO (SC = Success Criteria)
-* Go over the app and understand each line and each decision (SC: Notes for each file)
- */
-
 import (
 	"log"
 	"net/http"
@@ -82,8 +78,8 @@ func main() {
 	apiV1.Use(middleware.CSRFWithConfig(middleware.CSRFConfig{
 		CookieName:     "csrf_token",
 		CookieSameSite: http.SameSiteStrictMode,
-		CookieHTTPOnly: false,
-		CookieSecure:   false, // false for local HTTP development
+		CookieHTTPOnly: true,
+		CookieSecure:   false, //! false for local HTTP development | set to true in Production
 		TokenLookup:    "header:X-CSRF-Token",
 		// skip CSRF on logout
 		Skipper: func(c echo.Context) bool {
@@ -104,7 +100,7 @@ func main() {
 					Value:    cookie.Value,
 					Path:     "/",
 					MaxAge:   86400, // 24 hours
-					HttpOnly: false,
+					HttpOnly: true,
 					Secure:   false,
 					SameSite: http.SameSiteStrictMode,
 				}

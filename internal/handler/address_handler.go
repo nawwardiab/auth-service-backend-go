@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/labstack/echo/v4"
 )
 
@@ -54,8 +53,10 @@ func (h *AddressHandler) CreateAddress(c echo.Context) error {
 	}
 
 	// Extract the user ID from the JWT token
-	claims := c.Get("user").(*jwt.Token).Claims.(jwt.MapClaims)
-	userID := int(claims["user_id"].(float64))
+	userID, err := extractUserIDFromJWT(c)
+	if err != nil {
+		return err
+	}
 
 	// Map the request into model, setting UId from the token
 	addr := &model.Address{
@@ -80,10 +81,12 @@ func (h *AddressHandler) CreateAddress(c echo.Context) error {
 
 // GetAddresses handles GET /api/v1/users/addresses
 // Returns all addresses for the authenticated user
-func (h *AddressHandler) GetAddresses(c echo.Context) error {
+func (h *AddressHandler) GetUserAddresses(c echo.Context) error {
 	// Extract user ID from JWT
-	claims := c.Get("user").(*jwt.Token).Claims.(jwt.MapClaims)
-	userID := int(claims["user_id"].(float64))
+	userID, err := extractUserIDFromJWT(c)
+	if err != nil {
+		return err
+	}
 
 	// Get all addresses for user
 	addresses, err := h.addrSvc.GetAddresses(userID)
@@ -108,8 +111,10 @@ func (h *AddressHandler) GetAddress(c echo.Context) error {
 	}
 
 	// extract user_id from JWT
-	claims := c.Get("user").(*jwt.Token).Claims.(jwt.MapClaims)
-	userID := int(claims["user_id"].(float64))
+	userID, err := extractUserIDFromJWT(c)
+	if err != nil {
+		return err
+	}
 
 	addr, addrErr := h.addrSvc.GetAddress(userID, addrID)
 	if addrErr != nil {
@@ -132,8 +137,10 @@ func (h *AddressHandler) DeleteAddress(c echo.Context) error {
 	}
 
 	// extract user_id from JWT
-	claims := c.Get("user").(*jwt.Token).Claims.(jwt.MapClaims)
-	userID := int(claims["user_id"].(float64))
+	userID, err := extractUserIDFromJWT(c)
+	if err != nil {
+		return err
+	}
 
 	addr, addrErr := h.addrSvc.GetAddress(userID, addrID)
 	if addrErr != nil {
@@ -173,8 +180,10 @@ func (h *AddressHandler) UpdateAddress(c echo.Context) error {
 	}
 
 	// extract userID from JWT
-	claims := c.Get("user").(*jwt.Token).Claims.(jwt.MapClaims)
-	userID := int(claims["user_id"].(float64))
+	userID, err := extractUserIDFromJWT(c)
+	if err != nil {
+		return err
+	}
 
 	// map to model.Address
 	addr := &model.Address{

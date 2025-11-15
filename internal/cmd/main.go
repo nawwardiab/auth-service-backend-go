@@ -78,7 +78,7 @@ func main() {
 	apiV1.Use(middleware.CSRFWithConfig(middleware.CSRFConfig{
 		CookieName:     "csrf_token",
 		CookieSameSite: http.SameSiteStrictMode,
-		CookieHTTPOnly: true,
+		CookieHTTPOnly: false,
 		CookieSecure:   false, //! false for local HTTP development | set to true in Production
 		TokenLookup:    "header:X-CSRF-Token",
 		// skip CSRF on logout
@@ -100,7 +100,7 @@ func main() {
 					Value:    cookie.Value,
 					Path:     "/",
 					MaxAge:   86400, // 24 hours
-					HttpOnly: true,
+					HttpOnly: false,
 					Secure:   false,
 					SameSite: http.SameSiteStrictMode,
 				}
@@ -114,7 +114,7 @@ func main() {
 	apiV1.POST("/logout", auth.LogoutHandler)
 	apiV1.GET("/profile", auth.ProfileHandler)
 
-	apiV1.GET("/users/addresses", addr.GetAddresses)
+	apiV1.GET("/users/addresses", addr.GetUserAddresses)
 	apiV1.POST("/users/address/add", addr.CreateAddress)
 	apiV1.GET("/users/address/:id", addr.GetAddress)
 	apiV1.PATCH("/users/address/:id", addr.UpdateAddress)

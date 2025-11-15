@@ -147,7 +147,67 @@ func (h *AuthHandler) LogoutHandler(c echo.Context) error {
 	return c.NoContent(http.StatusNoContent)
 }
 
+// ProfileHandler returns the current user's profile
+func (h *AuthHandler) ProfileHandler(c echo.Context) error {
+	// Extract user ID from JWT token
+	userID, err := extractUserIDFromJWT(c)
+	if err != nil {
+		return err
+	}
+
+	// Get user from service
+	user, err := h.authSvc.GetUser(userID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, "user not found")
+	}
+
+	// Return user info (without password hash)
+	return c.JSON(http.StatusOK, echo.Map{
+		"user": echo.Map{
+			"id":       user.ID,
+			"username": user.Username,
+			"email":    user.Email,
+		},
+	})
+}
+
 // Helpers:
+
+// extractUserIDFromJWT extracts the user_id from the JWT token in the echo context.
+// Returns the user ID and an error (which can be returned directly from echo handlers).
+func extractUserIDFromJWT(c echo.Context) (int, error) {
+	// Get user from context with nil check
+	userValue := c.Get("user")
+	if userValue == nil {
+		return 0, echo.NewHTTPError(http.StatusUnauthorized, "missing authentication token")
+	}
+
+	// Type check for *jwt.Token
+	token, ok := userValue.(*jwt.Token)
+	if !ok {
+		return 0, echo.NewHTTPError(http.StatusForbidden, "invalid token type")
+	}
+
+	// Type check for jwt.MapClaims
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return 0, echo.NewHTTPError(http.StatusForbidden, "invalid token claims")
+	}
+
+	// Extract user_id with type assertion check
+	userIDValue, exists := claims["user_id"]
+	if !exists {
+		return 0, echo.NewHTTPError(http.StatusForbidden, "missing user_id in token")
+	}
+
+	userIDFloat, ok := userIDValue.(float64)
+	if !ok {
+		return 0, echo.NewHTTPError(http.StatusForbidden, "invalid user_id type in token")
+	}
+
+	return int(userIDFloat), nil
+}
+
 // issueToken creates a signed JWT string
 func (h *AuthHandler) issueToken(u *model.User) (string, error) {
 	exp := time.Now().Add(24 * time.Hour).Unix()
@@ -172,26 +232,4 @@ func (h *AuthHandler) setTokenCookie(c echo.Context, token string) {
 		SameSite: http.SameSiteLaxMode,
 	}
 	c.SetCookie(cookie)
-}
-
-// ProfileHandler returns the current user's profile
-func (h *AuthHandler) ProfileHandler(c echo.Context) error {
-	// Extract the user ID from the JWT token
-	claims := c.Get("user").(*jwt.Token).Claims.(jwt.MapClaims)
-	userID := int(claims["user_id"].(float64))
-
-	// Get user from service
-	user, err := h.authSvc.GetUser(userID)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, "user not found")
-	}
-
-	// Return user info (without password hash)
-	return c.JSON(http.StatusOK, echo.Map{
-		"user": echo.Map{
-			"id":       user.ID,
-			"username": user.Username,
-			"email":    user.Email,
-		},
-	})
 }

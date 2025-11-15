@@ -3,6 +3,7 @@ package handler
 import (
 	"errors"
 	"net/http"
+	"server/internal/cookie"
 	"server/internal/model"
 	"server/internal/service"
 	"strings"
@@ -16,12 +17,14 @@ import (
 type AuthHandler struct {
 	authSvc   *service.AuthService
 	jwtSecret []byte
+	env       string
 }
 
-func NewAuthHandler(authSvc *service.AuthService, jwtSecret []byte) *AuthHandler {
+func NewAuthHandler(authSvc *service.AuthService, jwtSecret []byte, env string) *AuthHandler {
 	return &AuthHandler{
 		authSvc:   authSvc,
 		jwtSecret: jwtSecret,
+		env:       env,
 	}
 }
 
@@ -127,21 +130,21 @@ func (h *AuthHandler) LogoutHandler(c echo.Context) error {
 		Expires:  time.Unix(0, 0),
 		MaxAge:   -1,
 		HttpOnly: true,
-		Secure:   true,
-		SameSite: http.SameSiteStrictMode,
+		Secure:   cookie.Secure(h.env),
+		SameSite: cookie.SameSite(h.env),
 	}
 	c.SetCookie(accessTokenCookie)
 
-	// Expire the CSRF cookie
+	// Expire the CSRF cookie (HttpOnly: false so JS can read it, but secure otherwise)
 	csrfCookie := &http.Cookie{
 		Name:     "csrf_token",
 		Value:    "",
 		Path:     "/",
 		Expires:  time.Unix(0, 0),
 		MaxAge:   -1,
-		HttpOnly: true,
-		Secure:   false,
-		SameSite: http.SameSiteStrictMode,
+		HttpOnly: false,
+		Secure:   cookie.Secure(h.env),
+		SameSite: cookie.SameSite(h.env),
 	}
 	c.SetCookie(csrfCookie)
 	return c.NoContent(http.StatusNoContent)
@@ -228,8 +231,8 @@ func (h *AuthHandler) setTokenCookie(c echo.Context, token string) {
 		Path:     "/",
 		Expires:  time.Now().Add(24 * time.Hour),
 		HttpOnly: true,
-		Secure:   false, // false for local HTTP development
-		SameSite: http.SameSiteLaxMode,
+		Secure:   cookie.Secure(h.env),
+		SameSite: cookie.SameSite(h.env),
 	}
 	c.SetCookie(cookie)
 }

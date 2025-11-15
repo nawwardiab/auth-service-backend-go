@@ -10,6 +10,7 @@ type Config struct {
 	DbUser     string `env:"DB_USER,required"`
 	DbPwd      string `env:"DB_PWD,required"`
 	DbName     string `env:"DB_NAME,required"`
+	Env        string `env:"ENV" envDefault:"development"`
 	JwtSecret  string `env:"JWT_SECRET,required"`
 	SessionKey string `env:"SESSION_KEY,required"`
 	ServerHost string `env:"SERVER_HOST" envDefault:"0.0.0.0"`
@@ -24,4 +25,9 @@ func LoadConfig() (*Config, error) {
 		return nil, err
 	}
 	return cfg, nil
+}
+
+// IsProduction returns true if the environment is production
+func IsProduction(env string) bool {
+	return env == "production" || env == "prod"
 }

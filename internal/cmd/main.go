@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"server/internal/config"
+	"server/internal/cookie"
 	"server/internal/db"
 	"server/internal/handler"
 	"server/internal/repo"
@@ -35,7 +36,7 @@ func main() {
 	// Auth
 	authRepo := repo.NewAuthRepo(dbConn)
 	authSvc := service.NewAuthService(authRepo)
-	auth := handler.NewAuthHandler(authSvc, jwtSecret)
+	auth := handler.NewAuthHandler(authSvc, jwtSecret, cfg.Env)
 
 	// Address
 	addrRepo := repo.NewAddressRepo(dbConn)
@@ -77,9 +78,9 @@ func main() {
 	// CSRF with Config
 	apiV1.Use(middleware.CSRFWithConfig(middleware.CSRFConfig{
 		CookieName:     "csrf_token",
-		CookieSameSite: http.SameSiteStrictMode,
-		CookieHTTPOnly: false,
-		CookieSecure:   false, //! false for local HTTP development | set to true in Production
+		CookieSameSite: cookie.SameSite(cfg.Env),
+		CookieHTTPOnly: false, // Keep readable from JS
+		CookieSecure:   cookie.Secure(cfg.Env),
 		TokenLookup:    "header:X-CSRF-Token",
 		// skip CSRF on logout
 		Skipper: func(c echo.Context) bool {
@@ -92,17 +93,17 @@ func main() {
 	apiV1.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			// Get CSRF token from cookie (set by CSRF middleware)
-			cookie, err := c.Cookie("csrf_token")
-			if err == nil && cookie != nil && cookie.Value != "" {
+			csrfCookie, err := c.Cookie("csrf_token")
+			if err == nil && csrfCookie != nil && csrfCookie.Value != "" {
 				// Set the same cookie at root path so it's accessible via document.cookie
 				rootCookie := &http.Cookie{
 					Name:     "csrf_token",
-					Value:    cookie.Value,
+					Value:    csrfCookie.Value,
 					Path:     "/",
 					MaxAge:   86400, // 24 hours
-					HttpOnly: false,
-					Secure:   false,
-					SameSite: http.SameSiteStrictMode,
+					HttpOnly: false, // Keep readable from JS
+					Secure:   cookie.Secure(cfg.Env),
+					SameSite: cookie.SameSite(cfg.Env),
 				}
 				c.SetCookie(rootCookie)
 			}

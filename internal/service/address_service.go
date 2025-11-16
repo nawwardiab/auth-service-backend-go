@@ -5,10 +5,13 @@ import (
 	"fmt"
 	"server/internal/model"
 	"server/internal/repo"
+
+	"github.com/jackc/pgx"
 )
 
 var ErrForbidden = errors.New("not allowed to access this resource")
 var ErrCannotDeleteDefault = errors.New("cannot delete default address")
+var ErrAddressNotFound = errors.New("service: address not found")
 
 type AddressService struct {
 	addrRepo *repo.AddressRepo
@@ -43,6 +46,9 @@ func (s *AddressService) GetAddresses(userID int) ([]model.Address, error) {
 func (s *AddressService) GetAddress(userID, id int) (*model.Address, error) {
 	addr, fetchErr := s.addrRepo.GetByID(id)
 	if fetchErr != nil {
+		if errors.Is(fetchErr, pgx.ErrNoRows) {
+			return nil, ErrAddressNotFound
+		}
 		return nil, fmt.Errorf("service: GetAddress failed: %w", fetchErr)
 	}
 	if addr.UId != userID {
@@ -55,7 +61,10 @@ func (s *AddressService) GetAddress(userID, id int) (*model.Address, error) {
 func (s *AddressService) DeleteAddress(userID, id int) error {
 	addr, err := s.addrRepo.GetByID(id)
 	if err != nil {
-		return err
+		if errors.Is(err, pgx.ErrNoRows) {
+			return ErrAddressNotFound
+		}
+		return fmt.Errorf("service: DeleteAddress failed: %w", err)
 	}
 	if addr.UId != userID {
 		return ErrForbidden
@@ -75,6 +84,9 @@ func (s *AddressService) UpdateAddress(userID int, a *model.Address) error {
 	// fetch existing to check ownership
 	existing, err := s.addrRepo.GetByID(a.ID)
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return ErrAddressNotFound
+		}
 		return fmt.Errorf("service: fetch existing: %w", err)
 	}
 	if existing.UId != userID {

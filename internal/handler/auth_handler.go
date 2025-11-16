@@ -1,10 +1,10 @@
 package handler
 
 import (
-	"errors"
 	"net/http"
 	"server/internal/cookie"
 	"server/internal/model"
+	"server/internal/response"
 	"server/internal/service"
 	"strings"
 
@@ -49,22 +49,20 @@ func (h *AuthHandler) RegisterHandler(c echo.Context) error {
 	req := new(registerUser)
 	bindErr := c.Bind(req)
 	if bindErr != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid request payload")
+		return response.Error(c, http.StatusBadRequest, response.CodeInvalidPayload, "invalid request payload")
 	}
 
 	// Form values sanitation
 	validateErr := c.Validate(req)
 	if validateErr != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, validateErr.Error())
+		return response.Error(c, http.StatusBadRequest, response.CodeValidationError, validateErr.Error())
 	}
 
 	// wire Auth service
 	user, registerErr := h.authSvc.Register(req.Username, req.Email, req.Password)
 	if registerErr != nil {
-		if errors.Is(registerErr, service.ErrUserExist) {
-			return echo.NewHTTPError(http.StatusConflict, "user already exists")
-		}
-		return echo.NewHTTPError(http.StatusInternalServerError, "server error")
+		code, status, msg := MapServiceError(registerErr)
+		return response.Error(c, status, code, msg)
 	}
 
 	return c.JSON(http.StatusCreated, echo.Map{
@@ -91,33 +89,30 @@ func (h *AuthHandler) LoginHandler(c echo.Context) error {
 	req := new(loginUser)
 	bindErr := c.Bind(req)
 	if bindErr != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid request payload")
+		return response.Error(c, http.StatusBadRequest, response.CodeInvalidPayload, "invalid request payload")
 	}
 
 	validateErr := c.Validate(req)
 	if validateErr != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, validateErr.Error())
+		return response.Error(c, http.StatusBadRequest, response.CodeValidationError, validateErr.Error())
 	}
 
 	user, loginErr := h.authSvc.Login(req.Email, req.Password)
 	if loginErr != nil {
-		if errors.Is(loginErr, service.ErrInvalidCredentials) {
-			return echo.NewHTTPError(http.StatusUnauthorized, "invalid credentials")
-		} else {
-			return echo.NewHTTPError(http.StatusInternalServerError, "login failed")
-		}
-	} else {
-		tokenString, err := h.issueToken(user)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, "token generation failed")
-		}
-
-		// set HttpOnly cookie
-		h.setTokenCookie(c, tokenString)
-
-		// return basic user info
-		return c.JSON(http.StatusOK, echo.Map{"user": echo.Map{"username": user.Username}})
+		code, status, msg := MapServiceError(loginErr)
+		return response.Error(c, status, code, msg)
 	}
+
+	tokenString, err := h.issueToken(user)
+	if err != nil {
+		return response.Error(c, http.StatusInternalServerError, response.CodeInternalServerError, "token generation failed")
+	}
+
+	// set HttpOnly cookie
+	h.setTokenCookie(c, tokenString)
+
+	// return basic user info
+	return c.JSON(http.StatusOK, echo.Map{"user": echo.Map{"username": user.Username}})
 }
 
 // LogoutHandler
@@ -161,7 +156,8 @@ func (h *AuthHandler) ProfileHandler(c echo.Context) error {
 	// Get user from service
 	user, err := h.authSvc.GetUser(userID)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, "user not found")
+		code, status, msg := MapServiceError(err)
+		return response.Error(c, status, code, msg)
 	}
 
 	// Return user info (without password hash)
@@ -182,30 +178,30 @@ func extractUserIDFromJWT(c echo.Context) (int, error) {
 	// Get user from context with nil check
 	userValue := c.Get("user")
 	if userValue == nil {
-		return 0, echo.NewHTTPError(http.StatusUnauthorized, "missing authentication token")
+		return 0, response.Error(c, http.StatusUnauthorized, response.CodeAuthMissingToken, "missing authentication token")
 	}
 
 	// Type check for *jwt.Token
 	token, ok := userValue.(*jwt.Token)
 	if !ok {
-		return 0, echo.NewHTTPError(http.StatusForbidden, "invalid token type")
+		return 0, response.Error(c, http.StatusForbidden, response.CodeAuthInvalidTokenType, "invalid token type")
 	}
 
 	// Type check for jwt.MapClaims
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok {
-		return 0, echo.NewHTTPError(http.StatusForbidden, "invalid token claims")
+		return 0, response.Error(c, http.StatusForbidden, response.CodeAuthInvalidTokenClaims, "invalid token claims")
 	}
 
 	// Extract user_id with type assertion check
 	userIDValue, exists := claims["user_id"]
 	if !exists {
-		return 0, echo.NewHTTPError(http.StatusForbidden, "missing user_id in token")
+		return 0, response.Error(c, http.StatusForbidden, response.CodeAuthMissingUserID, "missing user_id in token")
 	}
 
 	userIDFloat, ok := userIDValue.(float64)
 	if !ok {
-		return 0, echo.NewHTTPError(http.StatusForbidden, "invalid user_id type in token")
+		return 0, response.Error(c, http.StatusForbidden, response.CodeAuthInvalidUserIDType, "invalid user_id type in token")
 	}
 
 	return int(userIDFloat), nil

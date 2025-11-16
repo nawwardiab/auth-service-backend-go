@@ -12,6 +12,7 @@ import (
 
 var ErrInvalidCredentials = errors.New("service: invalid credentials")
 var ErrUserExist = errors.New("service: can't register this user")
+var ErrUserNotFound = errors.New("service: user not found")
 
 type AuthService struct {
 	authRepo *repo.AuthRepo
@@ -97,7 +98,7 @@ func (s *AuthService) GetUser(id int) (*model.User, error) {
 	usr, err := s.authRepo.GetUserByID(id)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, fmt.Errorf("service: user not found")
+			return nil, ErrUserNotFound
 		}
 		return nil, fmt.Errorf("service: user lookup: %w", err)
 	}

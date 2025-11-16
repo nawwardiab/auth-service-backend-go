@@ -3,6 +3,7 @@ package handler
 import (
 	"net/http"
 	"server/internal/model"
+	"server/internal/response"
 	"server/internal/service"
 	"strconv"
 	"strings"
@@ -43,13 +44,13 @@ func (h *AddressHandler) CreateAddress(c echo.Context) error {
 	req := new(address)
 	bindErr := c.Bind(&req)
 	if bindErr != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{"error": "invalid request payload"})
+		return response.Error(c, http.StatusBadRequest, response.CodeInvalidPayload, "invalid request payload")
 	}
 
 	// Normalize & validate
 	validateErr := c.Validate(req)
 	if validateErr != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, validateErr.Error())
+		return response.Error(c, http.StatusBadRequest, response.CodeValidationError, validateErr.Error())
 	}
 
 	// Extract the user ID from the JWT token
@@ -72,7 +73,8 @@ func (h *AddressHandler) CreateAddress(c echo.Context) error {
 	// Call service
 	createErr := h.addrSvc.CreateAddress(userID, addr)
 	if createErr != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{"error": createErr.Error()})
+		code, status, msg := MapServiceError(createErr)
+		return response.Error(c, status, code, msg)
 	}
 
 	// Return the newly-created address
@@ -91,7 +93,8 @@ func (h *AddressHandler) GetUserAddresses(c echo.Context) error {
 	// Get all addresses for user
 	addresses, err := h.addrSvc.GetAddresses(userID)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Error()})
+		code, status, msg := MapServiceError(err)
+		return response.Error(c, status, code, msg)
 	}
 
 	// Return empty array if no addresses (not an error)
@@ -107,7 +110,7 @@ func (h *AddressHandler) GetAddress(c echo.Context) error {
 	// parse and validate address id from url params
 	addrID, addrIdErr := strconv.Atoi(c.Param("id"))
 	if addrIdErr != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{"error": "invalid Address ID"})
+		return response.Error(c, http.StatusBadRequest, response.CodeInvalidAddressID, "invalid address ID")
 	}
 
 	// extract user_id from JWT
@@ -118,11 +121,8 @@ func (h *AddressHandler) GetAddress(c echo.Context) error {
 
 	addr, addrErr := h.addrSvc.GetAddress(userID, addrID)
 	if addrErr != nil {
-		return c.JSON(http.StatusNotFound, echo.Map{"error": addrErr.Error()})
-	}
-
-	if addr.UId != userID {
-		return c.JSON(http.StatusForbidden, echo.Map{"error": "you do not have access to this address"})
+		code, status, msg := MapServiceError(addrErr)
+		return response.Error(c, status, code, msg)
 	}
 
 	return c.JSON(http.StatusOK, addr)
@@ -133,7 +133,7 @@ func (h *AddressHandler) DeleteAddress(c echo.Context) error {
 	// parse and validate address id from url params
 	addrID, addrIdErr := strconv.Atoi(c.Param("id"))
 	if addrIdErr != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{"error": "invalid Address ID"})
+		return response.Error(c, http.StatusBadRequest, response.CodeInvalidAddressID, "invalid address ID")
 	}
 
 	// extract user_id from JWT
@@ -142,18 +142,10 @@ func (h *AddressHandler) DeleteAddress(c echo.Context) error {
 		return err
 	}
 
-	addr, addrErr := h.addrSvc.GetAddress(userID, addrID)
-	if addrErr != nil {
-		return c.JSON(http.StatusNotFound, echo.Map{"error": addrErr.Error()})
-	}
-
-	if addr.UId != userID {
-		return c.JSON(http.StatusForbidden, echo.Map{"error": "you do not have access to this address"})
-	}
-
 	delErr := h.addrSvc.DeleteAddress(userID, addrID)
 	if delErr != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{"error": delErr.Error()})
+		code, status, msg := MapServiceError(delErr)
+		return response.Error(c, status, code, msg)
 	}
 
 	return c.NoContent(http.StatusNoContent)
@@ -163,7 +155,7 @@ func (h *AddressHandler) UpdateAddress(c echo.Context) error {
 	// parse & validate id from url params
 	id, paramErr := strconv.Atoi(c.Param("id"))
 	if paramErr != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{"error": "invalid address ID"})
+		return response.Error(c, http.StatusBadRequest, response.CodeInvalidAddressID, "invalid address ID")
 	}
 
 	// bind & normalize & validate body
@@ -171,12 +163,12 @@ func (h *AddressHandler) UpdateAddress(c echo.Context) error {
 	bindErr := c.Bind(req)
 
 	if bindErr != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{"error": "invalid request payload"})
+		return response.Error(c, http.StatusBadRequest, response.CodeInvalidPayload, "invalid request payload")
 	}
 
 	validateErr := c.Validate(req)
 	if validateErr != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, validateErr.Error())
+		return response.Error(c, http.StatusBadRequest, response.CodeValidationError, validateErr.Error())
 	}
 
 	// extract userID from JWT
@@ -200,12 +192,8 @@ func (h *AddressHandler) UpdateAddress(c echo.Context) error {
 	// call service
 	updateErr := h.addrSvc.UpdateAddress(userID, addr)
 	if updateErr != nil {
-		switch updateErr {
-		case service.ErrForbidden:
-			return c.JSON(http.StatusForbidden, echo.Map{"error": updateErr.Error()})
-		default:
-			return c.JSON(http.StatusInternalServerError, echo.Map{"error": updateErr.Error()})
-		}
+		code, status, msg := MapServiceError(updateErr)
+		return response.Error(c, status, code, msg)
 	}
 
 	return c.JSON(http.StatusOK, addr)

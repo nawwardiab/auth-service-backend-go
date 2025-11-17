@@ -1,290 +1,264 @@
-# Architecture & Design Decisions
+# Architectural Decisions
+
+This document explains the key technical decisions made in this project and the reasoning behind them.
+
+---
 
 ## 1. Why Go + Echo Framework?
 
-**Decision:** Use Go with Echo framework for the backend
+**Decision:** Backend built in Go using Echo web framework.
 
 **Reasoning:**
-- Learned Go during internship - familiar and productive
-- Echo provides lightweight routing with powerful middleware
-- Built-in validation and error handling
-- Performance is excellent for HTTP services
-- Similar patterns to Express (easy to explain to TypeScript teams)
+Go was the decision of the CTO in the company I did internship with. As an experienced SRE his concerns were performance, type-safety and for it was fast and produced an executable (compiled).
+Echo has an easy and light-weight HTTP-handling approach, great middleware support (for logging, validating, jwt and cors)
 
 **Trade-offs:**
-- Go has less ecosystem than Node.js
-- Echo is less popular than Gin or standard library
-- BUT: Echo's middleware chaining made JWT + CSRF implementation cleaner
+- Pros: Fast, compiled, strong typing
+- Cons: less ecosystem than Node.js, (it required higher entrypoint with complex documentation/steeper learning curve)
 
-**What I'd do differently:**
-- For a TypeScript shop, I'd use NestJS or Express with TypeScript
-- But the architectural patterns (handler-service-repo) transfer directly
+**What I'd do differently:** I'm not sure I'd do things differently, I had to re-learn how I learn, jumped in deep cold water with no previous experience in the stack. I had to learn multiple things simultaneously (Go, PostgreSQL/SQL, low-level code concepts, code reviews and ownership, Docker, Makefile)
 
 ---
 
 ## 2. Why Handler-Service-Repository Pattern?
 
-**Decision:** Separate concerns into three layers
+**Decision:** Three-layer architecture with clear separation between HTTP, business logic, and data access.
 
 **Reasoning:**
-- **Handlers**: HTTP concerns only (request/response, validation)
-- **Services**: Business logic (can be reused, testable without HTTP)
-- **Repositories**: Data access (can swap databases without changing business logic)
+Initially this was the company's architectural decision. When I investigated deeper, I understood the importance of separation of concerns for better maintainability and easier testing with fewer dependencies.
 
-**Benefits:**
-- Easy to test (can mock each layer)
-- Easy to change (swap Echo for Gin, swap Postgres for MySQL)
-- Easy to understand (clear responsibilities)
-
-**Inspiration:**
-- This is similar to MVC but with clearer separation
-- Common in enterprise Go projects
-- Makes testing easier (though I haven't added tests yet)
-
----
-
-## 3. Why JWT in Cookies + CSRF Tokens?
-
-**Decision:** Use JWT stored in HTTPOnly cookies with CSRF protection
-
-**Reasoning:**
-- **JWT**: Stateless authentication, no database lookup per request
-- **HTTPOnly cookies**: Protected from XSS attacks (JavaScript can't read)
-- **CSRF tokens**: Protected from CSRF attacks (cross-site requests blocked)
-
-**Why not sessions?**
-- Sessions require database/Redis lookup per request (slower)
-- Sessions harder to scale horizontally
-- JWT works better for microservices (token is self-contained)
-
-**Why not JWT in localStorage?**
-- Vulnerable to XSS attacks
-- Can't set HTTPOnly flag
-- CSRF protection is easier than XSS protection
-
-**Trade-offs:**
-- Can't revoke JWTs easily (would need refresh tokens + blacklist)
-- Token size is larger than session ID
-- BUT: For this project, security > convenience
-
-**What I'd add in production:**
-- Refresh token rotation
-- Token blacklist for logout
-- Rate limiting
-
----
-
-## 4. Why TypeScript on Frontend Only?
-
-**Decision:** Backend in Go, frontend in TypeScript
-
-**Reasoning:**
-- Built backend during internship when learning Go
-- Wanted to demonstrate TypeScript knowledge for the job
-- Full-stack TypeScript would be ideal, but I prioritized:
-  - Working system over perfect stack match
-  - Quality backend over learning Node.js + TypeScript backend rushed
-
-**For the interview:**
-- I understand TypeScript/Node.js backend patterns
-- NestJS is similar to my Go structure (dependency injection, decorators, layers)
-- Concepts transfer (handlers → controllers, repos → services with TypeORM)
-
----
-
-## 5. Why Address Management as First Feature?
-
-**Decision:** Addresses as the first entity after auth
-
-**Reasoning:**
-- **Real-world relevance**: E-commerce sites need shipping addresses
-- **Demonstrates relationships**: User has-many Addresses (foreign key)
-- **Shows CRUD operations**: Create, Read, Update, Delete
-- **Authorization practice**: Users can only see their own addresses
-
-**What this teaches:**
-- Data modeling (normalized schema)
-- Authorization (ownership checks)
-- Full-stack flow (backend CRUD + frontend forms)
-
----
-
-## 6. Why PostgreSQL Over MySQL/SQLite?
-
-**Decision:** PostgreSQL as the database
-
-**Reasoning:**
-- Used PostgreSQL during internship
-- Better JSON support than MySQL (useful for future features)
-- More robust than SQLite for multi-user apps
-- Industry standard for modern web apps
-- Excellent migration tools
-
-**Trade-offs:**
-- Heavier than SQLite (but fine for production)
-- Slightly more complex than MySQL
-- BUT: Best choice for scalability
-
----
-
-## 7. Why Migrations Instead of ORM?
-
-**Decision:** Raw SQL migrations vs. ORM (GORM, etc.)
-
-**Reasoning:**
-- **Full control**: Know exactly what SQL runs
-- **Transparency**: No hidden queries or N+1 problems
-- **Learning**: Forces me to understand database design
-- **Performance**: No ORM overhead
-
-**Trade-offs:**
-- More verbose (write more SQL)
-- No type safety on queries
-- BUT: Better for learning and debugging
-
-**Future consideration:**
-- For rapid development, I might use an ORM
-- For performance-critical code, raw SQL is better
-- Hybrid approach: ORM for simple queries, raw SQL for complex
-
----
-
-## 8. Why No Tests Yet?
-
-**Decision:** Prioritize working features over tests initially
-
-**Reasoning:**
-- **Honest answer**: I'm still learning testing best practices
-- **Time constraint**: 2 months to build during internship
-- **Priority**: Get auth working securely first
-
-**What I know about testing:**
-- Unit tests: Test individual functions (handlers, services)
-- Integration tests: Test full flow with test database
-- E2E tests: Test through frontend
-
-**What I'd add first:**
-- Handler tests with mocked services
-- Service tests with mocked repos
-- At least 70% coverage before production
-
-**Learning plan:**
-- Study Go testing package
-- Learn testify library for assertions
-- Practice TDD on next project
-
----
-
-## 9. Why This Project Structure?
-
-**Decision:** `internal/` for all application code
-
-**Reasoning:**
-- Go convention: `internal/` makes code private to this module
-- Clear separation: `internal/handler`, `internal/service`, etc.
-- Easy navigation: Everything is organized by responsibility
-
-**Alternative considered:**
-- Flat structure (all files in root) → Too messy
-- Feature folders (auth/, address/) → Less clear for small projects
-
----
-
-## 10. Why Custom Validator Wrapper?
-
-**Decision:** Wrap go-playground/validator in custom validator
-
-**Reasoning:**
-- Echo requires specific interface
-- Centralized validation logic
-- Can add custom rules later
-- Single place to configure validation
-
-**Shows:**
-- Understanding of interfaces
-- DRY principle
-- Extensibility thinking
-
----
-
-## Future Decisions (If Asked)
-
-### "How would you add products?"
-
-**Decision:** Products as a separate service
+Each feature is divided into multiple layers, with each layer handling one specific concern. This makes it easier to debug and track issues. Updating a feature doesn't require refactoring other layers.
 
 **Structure:**
 ```
-internal/
-  product/
-    handler.go
-    service.go
-    repo.go
-  model/
-    product.go
+Handler  → validates input, calls service, formats response
+Service  → business logic, orchestration, domain rules
+Repository → database queries, data access only
 ```
 
-**Why separate:**
-- Products don't need auth logic (public catalog)
-- Can scale independently
-- Clear boundaries
+**Trade-offs:**
+- Pros: Testable layers, clear responsibilities, easy to swap implementations
+- Cons: More files
 
-**Integration with auth:**
-- Protected routes for admin (add/edit products)
-- Public routes for viewing
-- Auth service validates tokens, product service handles business logic
-
-### "How would you add cart?"
-
-**Decision:** Cart as session-based (short term) or database-backed (long term)
-
-**Session-based (MVP):**
-- Store cart in cookie/session
-- Fast, no database
-- Lost on logout (acceptable for MVP)
-
-**Database-backed (production):**
-- Cart table: user_id, product_id, quantity
-- Persists across sessions
-- Can track abandoned carts
-
-**My approach:**
-- Start with session for speed
-- Migrate to database when needed
-- Shows I understand MVP vs. production trade-offs
-
-### "How would you add tests?"
-
-**Priority order:**
-1. **Service layer tests** (business logic, no HTTP/DB dependencies)
-2. **Handler tests** (HTTP layer, mock services)
-3. **Integration tests** (full stack with test DB)
-4. **Frontend tests** (component + E2E)
-
-**Example test structure:**
-```go
-// service_test.go
-func TestCreateAddress(t *testing.T) {
-    mockRepo := &MockAddressRepo{}
-    service := NewAddressService(mockRepo)
-    
-    // Test valid address
-    // Test invalid data
-    // Test authorization
-}
-```
+**Why this matters:** Makes adding new features predictable - just follow the pattern
 
 ---
 
-## Questions I'm Ready For
+## 3. Why JWT + CSRF Protection Together?
 
-✅ Why Go?
-✅ Why this architecture?
-✅ Why JWT + CSRF?
-✅ How does auth work?
-✅ How would you scale this?
-✅ Why no tests?
-✅ How would you add feature X?
-✅ What would you improve?
-✅ Why should we hire you?
-```
+**Decision:** JWT tokens in HTTPOnly cookies + CSRF tokens in separate cookies.
+
+**Reasoning:**
+- **Why HTTPOnly cookies for JWT?** They cannot be accessed by JavaScript, protecting against XSS (Cross-Site Scripting) attacks where malicious JavaScript tries to steal tokens.
+- **Why CSRF tokens needed?** To protect against CSRF (Cross-Site Request Forgery) attacks where an attacker tricks a user's browser into making unwanted requests to our API. The CSRF token verifies that requests actually come from our frontend.
+- **Why two separate mechanisms?** Defense-in-depth. Even if an attacker tricks the user's browser into making a request (which includes the JWT cookie), they cannot supply the correct CSRF token because they can't read it from a different origin.
+
+**Implementation:**
+- JWT: stored in HTTPOnly cookie (JavaScript can't read it)
+- CSRF: stored in readable cookie, sent in X-CSRF-Token header
+- Backend validates both on protected routes
+
+**Trade-offs:**
+- Pros: Protects against both XSS and CSRF attacks
+- Cons: Can't easily revoke JWTs, CSRF cookie readable by JS
+
+**What I learned:**
+I initially struggled with CSRF cookie configuration in development. I set Secure=true everywhere, which broke local testing (no HTTPS in dev). I learned to create environment-aware configuration - checking ENV variable to set Secure=false in dev, true in production. This taught me that security configs must adapt to the environment.
+
+---
+
+## 4. Why Standardized Error Response System?
+
+**Decision:** All API errors return `{ "error": { "code": string, "message": string } }` format.
+
+**Reasoning:**
+- **What was wrong?** It was inconsistent and not global. Each layer had its own error handling, making it difficult to track which error messages were for clients vs internal (dev) use.
+- **Why does consistent format matter?** Clients can programmatically handle errors using stable codes. Easier debugging - we know exactly which business rule failed.
+- **Why use error codes instead of just messages?** To better identify issues, improves debugging and maintainability. Error messages might change, but codes stay stable.
+
+**Implementation:**
+- Created `internal/response` package with error envelope
+- Defined 16 typed error code constants (e.g., `AUTH_INVALID_CREDENTIALS`)
+- Service layer uses exported error sentinels (`ErrUserNotFound`)
+- Handler layer maps service errors to HTTP responses
+- Proper dependency flow: handler → service → repo
+
+**Trade-offs:**
+- Pros: Client-friendly, maintainable, debuggable
+- Cons: More upfront work, requires discipline across team
+
+**Why this shows maturity:**
+- I didn't just fix bugs - I identified systemic technical debt
+- I thought about API consumers (clients need stable error codes)
+- I refactored methodically (proper dependency flow, separation of concerns)
+- I documented the change (shows I think about team communication)
+- Real production systems need consistent error contracts for monitoring/alerting
+
+---
+
+## 5. Why TypeScript on Frontend Only?
+
+**Decision:** Backend in Go, frontend in React + TypeScript.
+
+**Reasoning:**
+- **Why TypeScript for frontend?** Company decision at internship. TypeScript has great type safety, especially when combined with Go's strong typing on the backend.
+- **Why not rewrite backend in TypeScript?** I wanted to demonstrate my architectural and engineering thinking for this interview. Providing working, clean code to demonstrate my abilities. Rewriting it in TypeScript wouldn't make me feel confident showing my real abilities, since it would be a completely new language for backend.
+
+**What this demonstrates:**
+- I know TypeScript (frontend proves it)
+- I understand the same architectural patterns apply across languages
+- Handler-Service-Repo in Go = Controller-Service-Repo in NestJS
+
+**If joining a TypeScript backend team:**
+I have experience with Express.js and Node.js. I would leverage this knowledge to scaffold a similar architectural pattern, while learning TypeScript-specific features (decorators, advanced types, etc.) to get the best out of the language.
+
+---
+
+## 7. Why No Tests Yet?
+
+**Decision:** Currently no automated tests (unit, integration, or E2E).
+
+**Honest reasoning:**
+- **What did I prioritize?** Learning the language, security implementation, and clean architecture.
+- **Why was this the right trade-off?** I was/am still learning Go's syntax and understanding the language's benefits. My next step is to learn writing tests in Go.
+- **Actual testing experience level:** Beginner level - I understand theory but lack hands-on practice. This is my #1 learning priority.
+
+**What I know about testing:**
+- I understand the theory: unit tests for services, integration tests for handlers, E2E for flows
+- I know what I'd test first: service layer business logic, then handler input validation
+
+**What I'd do next:**
+1. Learn how to write tests in Go (table-driven tests, mocking patterns)
+2. Start with service layer tests - pure business logic, easy to mock
+3. Add handler tests with mock services
+4. Integration tests for critical flows like auth
+
+**Why I'm eager to learn:**
+Testing is essential for confidence in production. I want to learn your team's testing practices - what you test, how you structure tests, and how you balance coverage with development speed. I learn best by doing, so I'm excited to contribute to your test suite and get hands-on experience with real production testing patterns.
+
+---
+
+## 8. How Would I Add Products/Cart Features?
+
+**Decision:** Deliberately did NOT add e-commerce features before this interview.
+
+**Reasoning:**
+- **Why would rushing be risky?** I have limited testing experience - rushing features would introduce bugs I couldn't catch in time.
+- **Time constraint:** Only 48 hours before interview - not enough time to build and test properly.
+- **Better strategy:** Show polished, working auth system rather than half-broken e-commerce features.
+
+**What's the trade-off between scope and quality?**
+For junior roles, quality matters more than feature count. Interviewers want to see:
+- Can you write clean, maintainable code? (yes - my auth system proves it)
+- Can you explain your decisions? (yes - this document proves it)
+- Can you learn quickly? (yes - Go in 2 months proves it)
+
+Rushing e-commerce features would have shown quantity but questioned quality.
+
+**If I were to add them:**
+
+### Products Service
+- Same handler-service-repo pattern
+- `Product` model: id, name, description, price, stock, created_at
+- Public endpoints: GET /products, GET /products/:id
+- Protected admin endpoints: POST /products, PATCH /products/:id
+- PostgreSQL table with migration
+
+### Cart Service
+- Associate cart items with user_id from JWT
+- `CartItem` model: id, user_id, product_id, quantity
+- Protected endpoints: GET/POST/PATCH/DELETE /cart/items
+- Business rules in service layer (stock validation, price calculations)
+
+### Why this approach?
+- **Consistency:** Same handler-service-repo pattern as auth/address
+- **Predictability:** Any dev can understand it because it follows established patterns
+- **Systematic thinking:** I don't reinvent the wheel for each feature
+
+---
+
+## 9. What Would I Do With More Time?
+
+**Priority 1: Comprehensive Testing**
+- [Fill in: What would you test first and why?]
+I would start with service layer (pure business logic, no http/db mocking needed. Then handler tests (mock services). Then critical flow integration tests (auth, CRUD).
+Testing first, because it is my biggest gap.
+
+**Priority 2: Better Error Handling**
+- [Fill in: What's still rough? Custom error types? Better logging?]
+Already standardized, but could improve:
+- structured logging
+- better error messages for validation failures
+- Monitoring based on error codes
+
+**Priority 3: Frontend Improvements**
+- [Fill in: AuthContext? Better loading states? Address UX?]
+- Auth context to centralize auth state (reduce API calls)
+- Better loading/error states (user feedback)
+- Address UX improvements (clearer default address selection)
+
+
+**Priority 4: Production Readiness**
+- [Fill in: Logging? Monitoring? Rate limiting? CI/CD?]
+- Structured logging (JSON logs for parsing)
+- Health check endpoints
+- Rate limiting (prevent abuse)
+- CI/CD pipeline (automated deploy)
+
+---
+
+## 10: What I'm Most Proud Of
+
+**1. Security Implementation**
+JWT + CSRF work together for defense-in-depth:
+- **JWT (in HTTPOnly cookie):** Authenticates the user, protected from XSS because JavaScript cannot access HTTPOnly cookies
+- **CSRF token (readable cookie + header):** Validates that requests come from my frontend, not a malicious site. Even if an attacker tricks the browser into sending the JWT cookie, they cannot provide the correct CSRF token.
+
+Two separate mechanisms protect against two different attack vectors.
+
+**2. Error Response Refactor**
+Shows thinking like an engineer. Standardizing errors makes it easier to debug and understand where errors are coming from. It shows I think about maintainability and API design - not just making features work, but making them work *well* for the long term.
+
+**3. Clean Architecture**
+Separation of concerns makes components less dependent on each other for easier testing. If the team decides to change tech (e.g., PostgreSQL to MongoDB), we only make necessary changes in files concerned with the database, without having to refactor the whole codebase.
+
+---
+
+## Questions I'm Ready to Answer
+
+**"Walk me through authentication flow"**
+1. User submits email/password to /api/login
+2. Backend validates credentials (bcrypt compare)
+3. If valid: generate JWT with user_id, set in HTTPOnly cookie
+4. Also set CSRF token in readable cookie
+5. Frontend stores CSRF token, sends in X-CSRF-Token header
+6. Protected routes validate both: JWT (who you are) + CSRF (request is legitimate)
+
+**"Why Go when we use TypeScript?"**
+1. Learned Go during 2-month internship - proves I can learn new languages quickly
+2. Frontend is TypeScript - I already know the language
+3. Architecture patterns transfer: Handler-Service-Repo = Controller-Service-Repo
+4. I'd ramp up on NestJS/TypeScript backend by leveraging Express.js knowledge
+
+**"Why no tests?"**
+I prioritized learning Go, security implementation, and clean architecture first. Testing is my next learning priority. I understand the theory (unit → integration → E2E) but lack hands-on experience. I'm eager to learn your team's testing practices.
+
+**"What's your biggest challenge?"**
+CSRF cookie configuration in development. Initially set Secure=true everywhere, which broke local testing (no HTTPS). Had to learn about environment-aware configuration - checking ENV variable to set Secure=false in dev, true in prod. Taught me that security configs need to be environment-aware.
+
+**"Why should we hire you?"**
+1. **Fast learner:** Go + PostgreSQL from scratch in 2 months
+2. **Quality-focused:** Could have rushed e-commerce features, chose to polish auth system instead
+3. **Honest about gaps:** I know testing is weak, documentation strong. I'm coachable and eager to grow
+4. **Creative problem solver:** [Story about handling the CSRF environment config challenge]
+
+---
+
+## What This Project Demonstrates
+
+This project proves I can:
+- Learn new stacks quickly (Go + PostgreSQL in 2 months)
+- Think systematically (consistent architecture patterns)
+- Prioritize quality over quantity (polished auth vs rushed features)
+- Identify and fix technical debt (error response refactor)
+- Be honest about gaps and eager to fill them (testing, production ops)

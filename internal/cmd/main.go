@@ -2,7 +2,6 @@ package main
 
 import (
 	"log"
-	"net/http"
 	"server/internal/config"
 	"server/internal/cookie"
 	"server/internal/db"
@@ -78,6 +77,7 @@ func main() {
 	// CSRF with Config
 	apiV1.Use(middleware.CSRFWithConfig(middleware.CSRFConfig{
 		CookieName:     "csrf_token",
+		CookiePath:     "/",
 		CookieSameSite: cookie.SameSite(cfg.Env),
 		CookieHTTPOnly: false, // Keep readable from JS
 		CookieSecure:   cookie.Secure(cfg.Env),
@@ -87,29 +87,6 @@ func main() {
 			return c.Path() == "/api/v1/logout"
 		},
 	}))
-
-	// Middleware to ensure CSRF token cookie is accessible at root path
-	// This allows JavaScript to read it via document.cookie
-	apiV1.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
-			// Get CSRF token from cookie (set by CSRF middleware)
-			csrfCookie, err := c.Cookie("csrf_token")
-			if err == nil && csrfCookie != nil && csrfCookie.Value != "" {
-				// Set the same cookie at root path so it's accessible via document.cookie
-				rootCookie := &http.Cookie{
-					Name:     "csrf_token",
-					Value:    csrfCookie.Value,
-					Path:     "/",
-					MaxAge:   86400, // 24 hours
-					HttpOnly: false, // Keep readable from JS
-					Secure:   cookie.Secure(cfg.Env),
-					SameSite: cookie.SameSite(cfg.Env),
-				}
-				c.SetCookie(rootCookie)
-			}
-			return next(c)
-		}
-	})
 
 	// Wire portected routes
 	apiV1.POST("/logout", auth.LogoutHandler)

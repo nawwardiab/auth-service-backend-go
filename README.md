@@ -196,6 +196,27 @@ Protected routes under `/api/v1` require:
 
 ---
 
+## Error Response Format
+
+All API errors return a standardized JSON envelope:
+```json
+{
+  "error": {
+    "code": "AUTH_INVALID_CREDENTIALS",
+    "message": "Invalid email or password"
+  }
+}
+```
+
+Error codes include:
+- Authentication: `AUTH_INVALID_CREDENTIALS`, `AUTH_USER_EXISTS`, `AUTH_MISSING_TOKEN`
+- Address: `ADDRESS_NOT_FOUND`, `ADDRESS_FORBIDDEN`, `ADDRESS_CANNOT_DELETE_DEFAULT`
+- Validation: `VALIDATION_ERROR`, `INVALID_PAYLOAD`
+
+See `internal/response/error.go` for the complete list of error codes.
+
+---
+
 ## Documentation
 
 - **[DECISIONS.md](./DECISIONS.md)** – Architectural decisions and technical reasoning

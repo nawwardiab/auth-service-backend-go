@@ -73,9 +73,10 @@ func (h *AuthHandler) RegisterHandler(c echo.Context) error {
 	})
 }
 
+// loginUser for sanitation
 type loginUser struct {
 	Email    string `json:"email" validate:"required,email"`
-	Password string `json:"password" validate:"required"`
+	Password string `json:"password" validate:"required,min=8"`
 }
 
 // Normalize implements Normalizable (from custom validator)

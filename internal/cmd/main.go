@@ -93,6 +93,7 @@ func main() {
 	apiV1.GET("/profile", auth.ProfileHandler)
 
 	apiV1.GET("/users/addresses", addr.GetUserAddresses)
+
 	apiV1.POST("/users/address/add", addr.CreateAddress)
 	apiV1.GET("/users/address/:id", addr.GetAddress)
 	apiV1.PATCH("/users/address/:id", addr.UpdateAddress)

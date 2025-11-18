@@ -21,7 +21,8 @@ type Normalizable interface {
 
 // Validate satisfies echo.Validator
 func (cv *CustomValidator) Validate(i interface{}) error {
-	if norm, ok := i.(Normalizable); ok {
+	norm, ok := i.(Normalizable)
+	if ok {
 		norm.Normalize()
 	}
 

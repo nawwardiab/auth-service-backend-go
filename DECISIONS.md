@@ -243,13 +243,6 @@ Separation of concerns makes components less dependent on each other for easier 
 5. Frontend stores CSRF token, sends in X-CSRF-Token header
 6. Protected routes validate both: JWT (who you are) + CSRF (request is legitimate)
 
-**"Why Go when we use TypeScript?"**
-
-1. Learned Go during 2-month internship - proves I can learn new languages quickly
-2. Frontend is TypeScript - I already know the language
-3. Architecture patterns transfer: Handler-Service-Repo = Controller-Service-Repo
-4. I'd ramp up on NestJS/TypeScript backend by leveraging Express.js knowledge
-
 **"Why no tests?"**
 I prioritized learning Go, security implementation, and clean architecture first. Testing is my next learning priority. I understand the theory (unit → integration → E2E) but lack hands-on experience. I'm eager to learn your team's testing practices.
 

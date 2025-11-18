@@ -27,9 +27,12 @@ func NewAuthService(authRepo *repo.AuthRepo) *AuthService {
 // - If user exists it returns an error to the http-request handler.
 func (s *AuthService) Register(username, email, pwd string) (*model.User, error) {
 	// Check if user exists
-	_, exists := s.authRepo.GetUserByEmail(email)
-	if exists == nil {
+	_, lookupErr := s.authRepo.GetUserByEmail(email)
+	if lookupErr == nil {
 		return nil, ErrUserExist
+	}
+	if !errors.Is(lookupErr, pgx.ErrNoRows) {
+		return nil, fmt.Errorf("service: check user exists: %w", lookupErr)
 	}
 
 	// hash password:
@@ -45,7 +48,7 @@ func (s *AuthService) Register(username, email, pwd string) (*model.User, error)
 		}
 		createUserErr := s.authRepo.CreateUser(usr)
 		if createUserErr != nil {
-			return nil, createUserErr
+			return nil, fmt.Errorf("service: create user: %w", createUserErr)
 		} else {
 			return usr, nil
 		}

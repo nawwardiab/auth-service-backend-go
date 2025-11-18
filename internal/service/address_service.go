@@ -39,7 +39,11 @@ func (s *AddressService) CreateAddress(userID int, a *model.Address) error {
 
 // GetAddresses retrieves all addresses for a user
 func (s *AddressService) GetAddresses(userID int) ([]model.Address, error) {
-	return s.addrRepo.GetAddresses(userID)
+	addresses, err := s.addrRepo.GetAddresses(userID)
+	if err != nil {
+		return nil, fmt.Errorf("service: GetAddresses failed: %w", err)
+	}
+	return addresses, nil
 }
 
 // GetAddress retrieves a single address by its ID

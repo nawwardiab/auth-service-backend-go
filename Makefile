@@ -11,7 +11,7 @@ run: compile
 
 # Datbase 
 # Add own binary path for migrate 
-MIGRATE_TOOL := /home/nawar/go/bin/migrate
+MIGRATE_TOOL := /home/dci-student/go/bin/migrate
 MIGRATE_DIR := migrations
 
 

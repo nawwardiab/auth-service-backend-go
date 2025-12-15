@@ -112,8 +112,13 @@ func (h *AuthHandler) LoginHandler(c echo.Context) error {
 	// set HttpOnly cookie
 	h.setTokenCookie(c, tokenString)
 
-	// return basic user info
-	return c.JSON(http.StatusOK, echo.Map{"user": echo.Map{"username": user.Username}})
+	// Get CSRF token from Echo context (set by CSRF middleware)
+	csrfToken := c.Get(middleware.DefaultCSRFConfig.ContextKey).(string)
+
+	return c.JSON(http.StatusOK, echo.Map{
+		"user":      echo.Map{"username": user.Username},
+		"csrfToken": csrfToken, // ← Return in response body
+	})
 }
 
 // LogoutHandler

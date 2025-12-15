@@ -1,44 +1,127 @@
 # Auth-Service Backend
 
-Go-based REST API for user authentication and address management.  
-Built with **Echo**, structured in layered architecture (handler, service, repository, model, validator), and designed for containerized deployment.
+## Live Demo
+🚀 **Backend API**: https://auth-service-backend-go-production.up.railway.app
+🌐 **Frontend App**: https://auth-frontend-react-ts.vercel.app
 
----
-
-## Overview
-
-- **Domain**: Auth + user address book
-- **Framework**: Echo (`github.com/labstack/echo/v4`)
-- **Persistence**: PostgreSQL (via `pgx`)
-- **Security**:
-  - JWT access tokens stored in **HTTP-only cookies**
-  - CSRF protection using a separate CSRF token cookie + header
-  - Environment-aware cookie settings (secure/same-site based on `ENV`)
-- **Docs & tooling**:
-  - `api_docs.md` – human-readable API documentation
-  - `API.postman_collection.json` – Postman collection
-  - `RUNBOOK.md` – operational procedures
+Go-based REST API for user authentication and address management with production deployment on Railway.
 
 ---
 
 ## Features
 
-- **Authentication**
-  - User registration and login
-  - JWT-based session via `access_token` cookie
-  - Logout endpoint that invalidates client session
-- **Address management**
-  - CRUD for user addresses
-  - User-scoped access to address records
-- **Validation & error handling**
-  - Centralized request validation using `go-playground/validator`
-  - Standardized error response envelope from handler layer
-- **Database migrations**
-  - SQL migrations under `migrations/`
-  - Make targets for up/down/reset flows
-- **Containerization**
-  - Production-oriented `Dockerfile`
-  - Make target `docker-build` for image creation
+- **JWT Authentication** - Secure token-based auth with HTTP-only cookies
+- **CSRF Protection** - Double-submit cookie pattern for cross-site request forgery prevention
+- **Bcrypt Password Hashing** - Industry-standard password security
+- **PostgreSQL Database** - Reliable persistence with Railway-hosted PostgreSQL
+- **Address CRUD** - Complete address management with user-scoped access control
+- **Clean 4-Layer Architecture** - Handlers → Services → Repositories → Models
+- **Docker Multi-Stage Builds** - Optimized 5MB production image using Alpine Linux
+- **Standardized Error Handling** - Consistent error response envelope across all endpoints
+
+---
+
+## Tech Stack
+
+- **Go 1.23** - Modern Go with latest features
+- **Echo v4** - High-performance web framework
+- **PostgreSQL** - Production database with pgx driver
+- **JWT + CSRF** - Secure authentication and session management
+- **Docker** - Containerized deployment
+- **Railway** - Cloud platform for backend and database hosting
+
+---
+
+## API Endpoints
+
+### Public Endpoints
+- `POST /api/register` - Register new user
+- `POST /api/login` - Login and receive JWT cookie
+
+### Protected Endpoints (require JWT + CSRF token)
+- `POST /api/v1/logout` - Logout and clear session
+- `GET  /api/v1/profile` - Get current user profile
+- `GET  /api/v1/users/addresses` - List all user addresses
+- `POST /api/v1/users/address/add` - Create new address
+- `GET  /api/v1/users/address/:id` - Get specific address
+- `PATCH /api/v1/users/address/:id` - Update address
+- `DELETE /api/v1/users/address/:id` - Delete address
+
+---
+
+## Architecture
+
+The backend follows a clean 4-layer architecture pattern:
+
+```
+Handlers (HTTP layer)
+    ↓
+Services (Business logic)
+    ↓
+Repositories (Data access)
+    ↓
+Models (Domain entities)
+```
+
+**Benefits:**
+- Clear separation of concerns
+- Easy to test each layer independently
+- Maintainable and scalable codebase
+- Framework-agnostic business logic
+
+---
+
+## Security
+
+- **HTTP-Only Cookies** - JWT tokens stored in HTTP-only cookies to prevent XSS attacks
+- **SameSite=None** - Configured for secure cross-site requests (production)
+- **Bcrypt Password Hashing** - All passwords hashed with bcrypt (cost factor 10)
+- **CSRF Token Validation** - All protected routes validate CSRF tokens via `X-CSRF-Token` header
+- **Environment-Based Configuration** - Secure/SameSite settings adjust based on `ENV` variable
+
+---
+
+## Quick Test
+
+Test the registration endpoint with curl:
+
+```bash
+curl -X POST https://auth-service-backend-go-production.up.railway.app/api/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "first_name": "John",
+    "last_name": "Doe",
+    "email": "john.doe@example.com",
+    "password": "SecurePass123!"
+  }'
+```
+
+Expected response:
+```json
+{
+  "id": "uuid-here",
+  "first_name": "John",
+  "last_name": "Doe",
+  "email": "john.doe@example.com",
+  "created_at": "2025-12-15T10:00:00Z"
+}
+```
+
+---
+
+## Deployment
+
+**Platform**: Railway
+**Deployment Date**: December 15, 2025
+**Region**: EU West
+**Features**:
+- Automatic HTTPS via Railway's edge network
+- Docker containerization with multi-stage builds
+- Connected to Railway PostgreSQL database
+- Environment variables managed through Railway dashboard
+- Auto-deploy on git push (optional)
+
+**Production URL**: https://auth-service-backend-go-production.up.railway.app
 
 ---
 
@@ -71,16 +154,18 @@ From `backend/`:
 
 ---
 
-## Prerequisites
+## Local Development
+
+All commands assume you are in the `backend/` directory.
+
+### Prerequisites
 
 - Go 1.21+ (Go module currently targets Go 1.24)
 - PostgreSQL instance (local or remote)
 - `migrate` CLI installed (for DB migrations)
 - Docker (optional, for containerized runs)
 
----
-
-## Configuration
+### Configuration
 
 Configuration is loaded from environment variables (or `.env` when using `make run` / migration targets).
 
@@ -111,12 +196,6 @@ SESSION_KEY=local-session-key
 SERVER_HOST=0.0.0.0
 SERVER_PORT=8080
 ```
-
----
-
-## Local Development
-
-All commands assume you are in the `backend/` directory.
 
 ### Install dependencies
 
@@ -159,43 +238,6 @@ Adjust the port mapping if you change `SERVER_PORT` in your environment.
 
 ---
 
-## API Surface
-
-See `api_docs.md` and the Postman collection for full details.
-
-Core routes (from `internal/cmd/main.go`):
-
-- **Auth**
-  - `POST /api/register`
-  - `POST /api/login`
-  - `POST /api/v1/logout`
-  - `GET  /api/v1/profile`
-- **Addresses**
-  - `GET    /api/v1/users/addresses`
-  - `POST   /api/v1/users/address/add`
-  - `GET    /api/v1/users/address/:id`
-  - `PATCH  /api/v1/users/address/:id`
-  - `DELETE /api/v1/users/address/:id`
-
-Protected routes under `/api/v1` require:
-
-- Valid JWT in `access_token` HTTP-only cookie
-- Valid CSRF token provided via `X-CSRF-Token` header
-
----
-
-## Development Notes
-
-- Follows handler → service → repository layering for clear separation of concerns.
-- Echo middleware is used for:
-  - Structured request logging
-  - JWT auth (`echo-jwt`)
-  - CSRF protection
-  - CORS (configured for the React frontend at `http://localhost:5173`).
-- Error responses are standardized through the `internal/response` package.
-
----
-
 ## Error Response Format
 
 All API errors return a standardized JSON envelope:
@@ -219,17 +261,17 @@ See `internal/response/error.go` for the complete list of error codes.
 
 ## Documentation
 
-- **[DECISIONS.md](./DECISIONS.md)** – Architectural decisions and technical reasoning
-- **[RUNBOOK.md](./RUNBOOK.md)** – Setup, operations, and deployment instructions
-- **[API Collection](./API.postman_collection.json)** – Postman collection for testing the API
-
-## Quick Links
-
-- [Why these architectural choices?](./DECISIONS.md)
-- [How to run this project?](./RUNBOOK.md)
+- **[DECISIONS.md](./DECISIONS.md)** - Architectural decisions and technical reasoning
+- **[RUNBOOK.md](./RUNBOOK.md)** - Setup, operations, and deployment instructions
+- **[api_docs.md](./api_docs.md)** - Human-readable API documentation
+- **[API Collection](./API.postman_collection.json)** - Postman collection for testing the API
 
 ---
 
 ## License
 
 MIT License. See `LICENSE` for details.
+
+---
+
+**Built by Nawar Diab** | [GitHub](https://github.com/nawwardiab) | [LinkedIn](https://www.linkedin.com/in/nawar-diab)

@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"net/http"
 	"server/internal/cookie"
 	"server/internal/model"
@@ -112,12 +114,18 @@ func (h *AuthHandler) LoginHandler(c echo.Context) error {
 	// set HttpOnly cookie
 	h.setTokenCookie(c, tokenString)
 
-	// Get CSRF token from Echo context (set by CSRF middleware)
-	csrfToken := c.Get(middleware.DefaultCSRFConfig.ContextKey).(string)
+	// Generate CSRF token manually (since login route is outside CSRF middleware)
+	csrfToken, csrfErr := generateCSRFToken()
+	if csrfErr != nil {
+		return response.Error(c, http.StatusInternalServerError, response.CodeInternalServerError, "csrf token generation failed")
+	}
+
+	// Set CSRF token as cookie
+	h.setCSRFCookie(c, csrfToken)
 
 	return c.JSON(http.StatusOK, echo.Map{
 		"user":      echo.Map{"username": user.Username},
-		"csrfToken": csrfToken, // ← Return in response body
+		"csrfToken": csrfToken, // Return in response body for cross-site use
 	})
 }
 
@@ -237,4 +245,27 @@ func (h *AuthHandler) setTokenCookie(c echo.Context, token string) {
 		SameSite: cookie.SameSite(h.env),
 	}
 	c.SetCookie(cookie)
+}
+
+// setCSRFCookie writes the CSRF token into a non-HttpOnly cookie (readable by JS)
+func (h *AuthHandler) setCSRFCookie(c echo.Context, csrfToken string) {
+	csrfCookie := &http.Cookie{
+		Name:     "csrf_token",
+		Value:    csrfToken,
+		Path:     "/",
+		Expires:  time.Now().Add(24 * time.Hour),
+		HttpOnly: false, // Must be false for JS to read in cross-site scenarios
+		Secure:   cookie.Secure(h.env),
+		SameSite: cookie.SameSite(h.env),
+	}
+	c.SetCookie(csrfCookie)
+}
+
+// generateCSRFToken generates a cryptographically secure random token
+func generateCSRFToken() (string, error) {
+	bytes := make([]byte, 32)
+	if _, err := rand.Read(bytes); err != nil {
+		return "", err
+	}
+	return base64.URLEncoding.EncodeToString(bytes), nil
 }

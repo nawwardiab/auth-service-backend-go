@@ -17,7 +17,7 @@ Echo has an easy and light-weight HTTP-handling approach, great middleware suppo
 - Pros: Fast, compiled, strong typing
 - Cons: less ecosystem than Node.js, (it required higher entrypoint with complex documentation/steeper learning curve)
 
-**What I'd do differently:** [e.g., If starting fresh for this company, I'd use NestJS/TypeScript to match their stack, but the architectural patterns transfer directly]
+**What I'd do differently:** I'm not sure I'd do things differently, I had to re-learn how I learn, jumped in deep cold water with no previous experience in the stack. I had to learn multiple things simultaneously (Go, PostgreSQL/SQL, low-level code concepts, code reviews and ownership, Docker, Makefile)
 
 ---
 
@@ -26,8 +26,9 @@ Echo has an easy and light-weight HTTP-handling approach, great middleware suppo
 **Decision:** Three-layer architecture with clear separation between HTTP, business logic, and data access.
 
 **Reasoning:**
-- [Fill in: Why separate these layers? Testing? Maintainability? Clear contracts?]
-- [Fill in: How does this help when building features?]
+Initially this was the company's architectural decision. When I investigated deeper, I understood the importance of separation of concerns for better maintainability and easier testing with fewer dependencies.
+
+Each feature is divided into multiple layers, with each layer handling one specific concern. This makes it easier to debug and track issues. Updating a feature doesn't require refactoring other layers.
 
 **Structure:**
 
@@ -42,7 +43,7 @@ Repository → database queries, data access only
 - Pros: Testable layers, clear responsibilities, easy to swap implementations
 - Cons: More files
 
-**Why this matters:** [e.g., Makes adding new features predictable - just follow the pattern]
+**Why this matters:** Makes adding new features predictable - just follow the pattern
 
 ---
 
@@ -59,7 +60,7 @@ Repository → database queries, data access only
 **Implementation:**
 
 - JWT: stored in HTTPOnly cookie (JavaScript can't read it)
-- CSRF: stored in readable cookie, sent in request headers
+- CSRF: stored in readable cookie, sent in X-CSRF-Token header
 - Backend validates both on protected routes
 
 **Trade-offs:**
@@ -67,11 +68,12 @@ Repository → database queries, data access only
 - Pros: Protects against both XSS and CSRF attacks
 - Cons: Can't easily revoke JWTs, CSRF cookie readable by JS
 
-**What I learned:** [Fill in: The CSRF token accessibility challenge you faced - how you solved it]
+**What I learned:**
+I initially struggled with CSRF cookie configuration in development. I set Secure=true everywhere, which broke local testing (no HTTPS in dev). I learned to create environment-aware configuration - checking ENV variable to set Secure=false in dev, true in production. This taught me that security configs must adapt to the environment.
 
 ---
 
-## 4. Why Standardized Error Response System? (Recent Refactor)
+## 4. Why Standardized Error Response System?
 
 **Decision:** All API errors return `{ "error": { "code": string, "message": string } }` format.
 
@@ -131,8 +133,7 @@ I have experience with Express.js and Node.js. I would leverage this knowledge t
 **What I know about testing:**
 
 - I understand the theory: unit tests for services, integration tests for handlers, E2E for flows
-- I know what I'd test first: [e.g., service layer business logic, then handler input validation]
-- I've seen test structures in the internship codebase
+- I know what I'd test first: service layer business logic, then handler input validation
 
 **What I'd do next:**
 
@@ -213,7 +214,7 @@ Already standardized, but could improve:
 
 ---
 
-## 10. What I'm Most Proud Of
+## 10: What I'm Most Proud Of
 
 **1. Security Implementation**
 JWT + CSRF work together for defense-in-depth:
@@ -227,7 +228,7 @@ Two separate mechanisms protect against two different attack vectors.
 Shows thinking like an engineer. Standardizing errors makes it easier to debug and understand where errors are coming from. It shows I think about maintainability and API design - not just making features work, but making them work _well_ for the long term.
 
 **3. Clean Architecture**
-- [Fill in: Why does separation of concerns matter?]
+Separation of concerns makes components less dependent on each other for easier testing. If the team decides to change tech (e.g., PostgreSQL to MongoDB), we only make necessary changes in files concerned with the database, without having to refactor the whole codebase.
 
 ---
 

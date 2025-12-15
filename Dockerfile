@@ -1,47 +1,42 @@
 # Stage 1: Build the Go binary
 FROM golang:1.23-alpine AS builder
 
-# Install build dependencies
-RUN apk add --no-cache git
+# Install build dependencies (git may be needed for some Go modules)
+RUN apk update && apk add --no-cache git ca-certificates tzdata
 
 # Set working directory
 WORKDIR /build
 
-# Copy go mod files
+# Copy go mod files first (better caching)
 COPY go.mod go.sum ./
 
 # Download dependencies
-RUN go mod download
+RUN go mod download && go mod verify
 
 # Copy source code
 COPY . .
 
 # Build the binary
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o server ./internal/cmd/main.go
+# CGO_ENABLED=0 creates a statically-linked binary (no C dependencies)
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+    -ldflags='-w -s -extldflags "-static"' \
+    -o server \
+    ./internal/cmd/main.go
 
 # Stage 2: Create minimal runtime image
-FROM alpine:latest
+FROM scratch
 
-# Install ca-certificates for HTTPS
-RUN apk --no-cache add ca-certificates
+# Copy ca-certificates from builder (for HTTPS)
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
-# Create non-root user
-RUN addgroup -g 1000 appuser && \
-    adduser -D -u 1000 -G appuser appuser
+# Copy timezone data (optional, but good to have)
+COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo
 
-WORKDIR /app
-
-# Copy binary from builder stage
-COPY --from=builder /build/server .
-
-# Change ownership
-RUN chown -R appuser:appuser /app
-
-# Switch to non-root user
-USER appuser
+# Copy the binary from builder
+COPY --from=builder /build/server /server
 
 # Expose port
 EXPOSE 8080
 
 # Run the binary
-ENTRYPOINT ["./server"]
+ENTRYPOINT ["/server"]

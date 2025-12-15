@@ -16,7 +16,7 @@ func Secure(env string) bool {
 // SameSiteStrictMode in production, SameSiteLaxMode in development
 func SameSite(env string) http.SameSite {
 	if config.IsProduction(env) {
-		return http.SameSiteStrictMode
+		return http.SameSiteNoneMode
 	}
 	return http.SameSiteLaxMode
 }

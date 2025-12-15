@@ -5,7 +5,7 @@ import (
 )
 
 type Config struct {
-	CorsOrigin string `env: "CORS_ORIGIN" envDefault:"http://localhost:5173"`
+	CorsOrigin string `env:"CORS_ORIGIN" envDefault:"http://localhost:5173"`
 	DbHost     string `env:"DB_HOST" envDefault:"localhost"`
 	DbPort     string `env:"DB_PORT" envDefault:"5432"`
 	DbUser     string `env:"DB_USER,required"`

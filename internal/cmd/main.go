@@ -54,7 +54,7 @@ func main() {
 
 	// CORS for React app
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-		AllowOrigins:     []string{"http://localhost:5173"},
+		AllowOrigins:     []string{cfg.CorsOrigin},
 		AllowCredentials: true,
 		AllowHeaders:     []string{echo.HeaderContentType, echo.HeaderAccept, "X-CSRF-Token"},
 	}))

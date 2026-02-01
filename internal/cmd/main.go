@@ -59,22 +59,22 @@ func main() {
 		AllowHeaders:     []string{echo.HeaderContentType, echo.HeaderAccept, "X-CSRF-Token"},
 	}))
 
-	// group for protected API routes (JWT + CSRF)
-
-	// public routes
+	// API v1 routes
 	api := e.Group("/api")
-	api.POST("/login", auth.LoginHandler)
-	api.POST("/register", auth.RegisterHandler)
-
 	apiV1 := api.Group("/v1")
-	// JWT with Config
+
+	// JWT with Config - skip login and register
 	apiV1.Use(echojwt.WithConfig(echojwt.Config{
 		SigningKey:    jwtSecret,
 		SigningMethod: "HS256",
 		TokenLookup:   "cookie:access_token",
 		ContextKey:    "user",
+		Skipper: func(c echo.Context) bool {
+			// Skip JWT for login and register
+			return c.Path() == "/api/v1/login" || c.Path() == "/api/v1/register"
+		},
 	}))
-	// CSRF with Config
+	// CSRF with Config - skip login, register, and logout
 	apiV1.Use(middleware.CSRFWithConfig(middleware.CSRFConfig{
 		CookieName:     "csrf_token",
 		CookiePath:     "/",
@@ -82,13 +82,18 @@ func main() {
 		CookieHTTPOnly: false, // Keep readable from JS
 		CookieSecure:   cookie.Secure(cfg.Env),
 		TokenLookup:    "header:X-CSRF-Token",
-		// skip CSRF on logout
 		Skipper: func(c echo.Context) bool {
-			return c.Path() == "/api/v1/logout"
+			// Skip CSRF for login, register, and logout
+			path := c.Path()
+			return path == "/api/v1/login" || path == "/api/v1/register" || path == "/api/v1/logout"
 		},
 	}))
 
-	// Wire portected routes
+	// Public routes (JWT and CSRF skipped via middleware config)
+	apiV1.POST("/login", auth.LoginHandler)
+	apiV1.POST("/register", auth.RegisterHandler)
+
+	// Protected routes (require JWT and CSRF)
 	apiV1.POST("/logout", auth.LogoutHandler)
 	apiV1.GET("/profile", auth.ProfileHandler)
 

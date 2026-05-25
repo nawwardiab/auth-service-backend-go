@@ -12,24 +12,59 @@ type AddressRepo struct {
 }
 
 func NewAddressRepo(db *pgx.Conn) *AddressRepo {
-	return  &AddressRepo{db: db}
+	return &AddressRepo{db: db}
 }
 
 // CreateAddress inserts a new address and populates a.ID, CreatedAt, UpdatedAt.
-func (r *AddressRepo) CreateAddress(a *model.Address) error{
+func (r *AddressRepo) CreateAddress(a *model.Address) error {
 	query := `INSERT INTO addresses
       (u_id, addr_1, addr_2, zip, city, country, is_default)
     VALUES
       ($1,$2,$3,$4,$5,$6,$7)
     RETURNING id, created_at, updated_at;
 	`
-	row := r.db.QueryRow(query, a.UId, a.Addr_1, a.Addr_2, a.Zip, a.City, a.Country, a.IsDefault,)
-  scanErr := row.Scan(&a.ID, &a.CreatedAt, &a.UpdatedAt)
+	row := r.db.QueryRow(query, a.UId, a.Addr_1, a.Addr_2, a.Zip, a.City, a.Country, a.IsDefault)
+	scanErr := row.Scan(&a.ID, &a.CreatedAt, &a.UpdatedAt)
 	if scanErr != nil {
 		return fmt.Errorf("Create Address: %w", scanErr)
 	} else {
 		return nil
 	}
+}
+
+// GetAddresses retrieves all addresses for a user
+func (r *AddressRepo) GetAddresses(userID int) ([]model.Address, error) {
+	query := `
+		SELECT id, u_id, addr_1, addr_2, zip, city, country, is_default, created_at, updated_at
+		FROM addresses
+		WHERE u_id = $1;`
+	rows, queryErr := r.db.Query(query, userID)
+	if queryErr != nil {
+		return nil, fmt.Errorf("GetAddresses: %w", queryErr)
+	}
+	defer rows.Close()
+	var addresses []model.Address
+	for rows.Next() {
+		var addr model.Address
+		err := rows.Scan(
+			&addr.ID,
+			&addr.UId,
+			&addr.Addr_1,
+			&addr.Addr_2,
+			&addr.Zip,
+			&addr.City,
+			&addr.Country,
+			&addr.IsDefault,
+			&addr.CreatedAt,
+			&addr.UpdatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+		addresses = append(addresses, addr)
+	}
+
+	return addresses, nil
 }
 
 // ClearDefaultForUser sets defaut=false on all addresses for the given user.
@@ -40,36 +75,36 @@ func (r *AddressRepo) ClearDefaultForUser(userID int) error {
  		WHERE u_id = $1;
 	`
 	_, execErr := r.db.Exec(query, userID)
-  if execErr != nil {
-    return fmt.Errorf("ClearDefaultForUser: %w", execErr)
-  }
-  return nil
+	if execErr != nil {
+		return fmt.Errorf("ClearDefaultForUser: %w", execErr)
+	}
+	return nil
 }
 
 // GetByID fetches a single address by its primary key.
-func (r *AddressRepo) GetByID(id int) (*model.Address, error){
+func (r *AddressRepo) GetByID(id int) (*model.Address, error) {
 	query := `
     SELECT id, u_id, addr_1, addr_2, zip, city, country,  is_default, created_at, updated_at
       FROM addresses
     WHERE id = $1;
   `
 
-  a := new(model.Address)
-  row := r.db.QueryRow(query, id)
+	a := new(model.Address)
+	row := r.db.QueryRow(query, id)
 	scanErr := row.Scan(
-    &a.ID, &a.UId,
-    &a.Addr_1, &a.Addr_2,
-    &a.Zip, &a.City, &a.Country,
-    &a.IsDefault, &a.CreatedAt, &a.UpdatedAt,
-  )
-  if scanErr != nil {
-    if scanErr == pgx.ErrNoRows {
-        return nil, fmt.Errorf("GetByID: no address with id %d", id)
-    }
-    return nil, fmt.Errorf("GetByID: %w", scanErr)
-  }
+		&a.ID, &a.UId,
+		&a.Addr_1, &a.Addr_2,
+		&a.Zip, &a.City, &a.Country,
+		&a.IsDefault, &a.CreatedAt, &a.UpdatedAt,
+	)
+	if scanErr != nil {
+		if scanErr == pgx.ErrNoRows {
+			return nil, fmt.Errorf("GetByID: no address with id %d", id)
+		}
+		return nil, fmt.Errorf("GetByID: %w", scanErr)
+	}
 
-  return a, nil
+	return a, nil
 }
 
 // Delete removes an address by its ID.
@@ -78,10 +113,10 @@ func (r *AddressRepo) Delete(id int) error {
 	 WHERE id = $1;
 	`
 	_, execErr := r.db.Exec(query, id)
-  if execErr != nil {
-    return fmt.Errorf("Delete: %w", execErr)
-  }
-  return nil
+	if execErr != nil {
+		return fmt.Errorf("Delete: %w", execErr)
+	}
+	return nil
 }
 
 // Update modifies an existing address, flipping the default flag if requested.
@@ -98,7 +133,7 @@ func (r *AddressRepo) Update(a *model.Address) error {
 		 WHERE id = $7
 	`
 
-  _, execErr := r.db.Exec(query,
+	_, execErr := r.db.Exec(query,
 		a.Addr_1, a.Addr_2,
 		a.Zip, a.City, a.Country,
 		a.IsDefault, a.ID,

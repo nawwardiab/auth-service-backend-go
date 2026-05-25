@@ -5,66 +5,82 @@ import (
 	"fmt"
 	"server/internal/model"
 	"server/internal/repo"
+
+	"github.com/jackc/pgx"
 )
 
 var ErrForbidden = errors.New("not allowed to access this resource")
 var ErrCannotDeleteDefault = errors.New("cannot delete default address")
+var ErrAddressNotFound = errors.New("service: address not found")
 
 type AddressService struct {
 	addrRepo *repo.AddressRepo
 }
-
 
 func NewAddressService(addrRepo *repo.AddressRepo) *AddressService {
 	return &AddressService{addrRepo: addrRepo}
 }
 
 func (s *AddressService) CreateAddress(userID int, a *model.Address) error {
-  a.UId = userID
+	a.UId = userID
 	if a.IsDefault {
 		clearAccErr := s.addrRepo.ClearDefaultForUser(a.UId)
-    if clearAccErr != nil {
-      return fmt.Errorf("service: clearing previous defaults: %w", clearAccErr)
-    }
-  }
+		if clearAccErr != nil {
+			return fmt.Errorf("service: clearing previous defaults: %w", clearAccErr)
+		}
+	}
 
 	createAccErr := s.addrRepo.CreateAddress(a)
-  if createAccErr != nil {
-    return fmt.Errorf("service: CreateAddress failed: %w", createAccErr)
-  }
-  return nil
+	if createAccErr != nil {
+		return fmt.Errorf("service: CreateAddress failed: %w", createAccErr)
+	}
+	return nil
+}
+
+// GetAddresses retrieves all addresses for a user
+func (s *AddressService) GetAddresses(userID int) ([]model.Address, error) {
+	addresses, err := s.addrRepo.GetAddresses(userID)
+	if err != nil {
+		return nil, fmt.Errorf("service: GetAddresses failed: %w", err)
+	}
+	return addresses, nil
 }
 
 // GetAddress retrieves a single address by its ID
 func (s *AddressService) GetAddress(userID, id int) (*model.Address, error) {
-  addr, fetchErr := s.addrRepo.GetByID(id)
-  if fetchErr != nil {
-    return nil, fmt.Errorf("service: GetAddress failed: %w", fetchErr)
-  }
-  if addr.UId != userID {
-    return nil, ErrForbidden
-  }
-  return addr, nil
+	addr, fetchErr := s.addrRepo.GetByID(id)
+	if fetchErr != nil {
+		if errors.Is(fetchErr, pgx.ErrNoRows) {
+			return nil, ErrAddressNotFound
+		}
+		return nil, fmt.Errorf("service: GetAddress failed: %w", fetchErr)
+	}
+	if addr.UId != userID {
+		return nil, ErrForbidden
+	}
+	return addr, nil
 }
-
 
 // DeleteAddress removes an address record
 func (s *AddressService) DeleteAddress(userID, id int) error {
-  addr, err := s.addrRepo.GetByID(id)
-  if err != nil {
-    return err
-  }
-  if addr.UId != userID {
-    return ErrForbidden
-  }
-  if addr.IsDefault {
-    return ErrCannotDeleteDefault
-  }
-   deleteErr := s.addrRepo.Delete(id)
+	addr, err := s.addrRepo.GetByID(id)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return ErrAddressNotFound
+		}
+		return fmt.Errorf("service: DeleteAddress failed: %w", err)
+	}
+	if addr.UId != userID {
+		return ErrForbidden
+	}
+	if addr.IsDefault {
+		return ErrCannotDeleteDefault
+	}
+	deleteErr := s.addrRepo.Delete(id)
 	if deleteErr != nil {
-    return fmt.Errorf("service: DeleteAddress failed: %w", deleteErr)
-  }
-  return nil
+		return fmt.Errorf("service: DeleteAddress failed: %w", deleteErr)
+	}
+	return nil
 }
 
 // UpdateAddress applies updates, enforcing ownership and single-default rules.
@@ -72,6 +88,9 @@ func (s *AddressService) UpdateAddress(userID int, a *model.Address) error {
 	// fetch existing to check ownership
 	existing, err := s.addrRepo.GetByID(a.ID)
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return ErrAddressNotFound
+		}
 		return fmt.Errorf("service: fetch existing: %w", err)
 	}
 	if existing.UId != userID {

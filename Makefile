@@ -7,10 +7,11 @@ compile: ./internal/cmd/main.go
 # Run sources .env file and runs the compiled executable 
 run: compile
 	@echo "–> running the app"
-	set -a; . ./.env; set +a; env; ./server
+	set -a; . ./.env; set +a; ./server
 
 # Datbase 
-MIGRATE_TOOL := /home/dci-student/go/bin/migrate
+# Add own binary path for migrate 
+MIGRATE_TOOL := /home/nawar/go/bin/migrate
 MIGRATE_DIR := migrations
 
 

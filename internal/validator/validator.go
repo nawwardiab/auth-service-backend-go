@@ -7,23 +7,24 @@ import (
 
 // CustomValidator wraps the go-playground validator
 type CustomValidator struct {
-    validator *validator.Validate
+	validator *validator.Validate
 }
 
 // New returns an echo.Validator
 func New() echo.Validator {
-    return &CustomValidator{validator: validator.New()}
+	return &CustomValidator{validator: validator.New()}
 }
 
 type Normalizable interface {
-  Normalize()
+	Normalize()
 }
 
 // Validate satisfies echo.Validator
 func (cv *CustomValidator) Validate(i interface{}) error {
-    if norm, ok := i.(Normalizable); ok {
-    norm.Normalize()
-    }
+	norm, ok := i.(Normalizable)
+	if ok {
+		norm.Normalize()
+	}
 
-    return cv.validator.Struct(i)
+	return cv.validator.Struct(i)
 }
